@@ -172,6 +172,113 @@ export const removeUnsetValues = (
 };
 
 /**
+ * Converts object to FormData with nested support
+ */
+export const objectToFormData = (
+    obj: Record<string, any>,
+    params: {
+        formData?: FormData;
+        namespace?: string;
+        ignoreFields?: string[];
+        ignoreNullUndefined?: boolean;
+    } = {}
+): FormData => {
+    const {
+        formData = new FormData(),
+        namespace = '',
+        ignoreFields = [],
+        ignoreNullUndefined = true
+    } = params;
+
+    for (let property in obj) {
+        if (obj.hasOwnProperty(property) && !ignoreFields.includes(property)) {
+            let field = namespace ? `${namespace}[${property}]` : property;
+            let data = obj[property];
+
+            if (data == null) {
+                if (!ignoreNullUndefined) {
+                    formData.append(field, '');
+                }
+            } else if (typeof data === 'object' && !(data instanceof File)) {
+                objectToFormData(data, { ...params, formData, namespace: field });
+            } else {
+                formData.append(field, data);
+            }
+        }
+    }
+
+    return formData;
+};
+
+/**
+ * Get difference between two objects
+ */
+export const diff = (
+    obj1: Record<string, any>,
+    obj2: Record<string, any>,
+    opts: { deep?: boolean } = {}
+): Record<string, any> => {
+    const { deep = false } = opts;
+    const result: Record<string, any> = {};
+
+    for (const key in obj2) {
+        if (!deep) {
+            if (!obj1.hasOwnProperty(key)) {
+                result[key] = obj2[key];
+            }
+        } else {
+            if (!obj1.hasOwnProperty(key)) {
+                result[key] = obj2[key];
+            } else if (typeof obj2[key] === 'object' && obj2[key] !== null) {
+                const nestedDiff = diff(obj1[key], obj2[key], { deep: true });
+                if (Object.keys(nestedDiff).length > 0) {
+                    result[key] = nestedDiff;
+                }
+            }
+        }
+    }
+
+    return result;
+};
+
+/**
+ * Deep clone with File support
+ */
+export const deepClone = (obj: any): any => {
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+
+    let clone: any;
+
+    if (obj instanceof Date) {
+        clone = new Date(obj.getTime());
+    } else if (obj instanceof Array) {
+        clone = [];
+        for (let i = 0; i < obj.length; i++) {
+            clone[i] = deepClone(obj[i]);
+        }
+    } else if (obj instanceof Function) {
+        clone = obj.bind(null);
+    } else if (obj instanceof File) {
+        clone = new File([obj], obj.name, { type: obj.type });
+    } else {
+        clone = {};
+        for (let key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    clone[key] = deepClone(obj[key]);
+                } else {
+                    Object.defineProperty(clone, key, Object.getOwnPropertyDescriptor(obj, key)!);
+                }
+            }
+        }
+    }
+
+    return clone;
+};
+
+/**
  * Flatten object with dot notation
  */
 export const flattenObject = (

@@ -111,6 +111,32 @@ export const getStringBetween = (str: string, start: string, end: string): strin
 };
 
 /**
+ * Truncates string with options for strict/word boundary
+ */
+export const truncate = (
+    string: string,
+    length: number,
+    options: { ending?: string; strict?: boolean } = {}
+): string => {
+    if (typeof string !== 'string') return string;
+
+    const { ending = '...', strict = false } = options;
+
+    if (string.length > length) {
+        const truncatedText = string.substring(0, length - ending.length);
+
+        if (strict) {
+            return truncatedText.trim() + ending;
+        } else {
+            const lastSpaceIndex = truncatedText.lastIndexOf(' ');
+            return (lastSpaceIndex === -1 ? truncatedText : truncatedText.substring(0, lastSpaceIndex)) + ending;
+        }
+    } else {
+        return string;
+    }
+};
+
+/**
  * Converts RGB to hex
  */
 export const rgb2hex = (rgb: string): string =>
