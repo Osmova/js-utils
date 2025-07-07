@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Copy CJS files to main dist folder
+// Copy CJS files to main dist folder and fix imports
 function copyFiles(src, dest) {
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
@@ -15,7 +15,13 @@ function copyFiles(src, dest) {
     if (fs.statSync(srcPath).isDirectory()) {
       copyFiles(srcPath, path.join(dest, file));
     } else if (file.endsWith('.js')) {
-      fs.copyFileSync(srcPath, destPath);
+      let content = fs.readFileSync(srcPath, 'utf8');
+
+      // Fix require paths to point to .cjs files
+      content = content.replace(/require\(['"]\.\/([^'"\/]+)['"]\)/g, "require('./$1/index.cjs')");
+      content = content.replace(/require\(['"]\.\/([^'"]+)\/index\.js['"]\)/g, "require('./$1/index.cjs')");
+      
+      fs.writeFileSync(destPath, content);
     }
   });
 }
