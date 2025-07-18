@@ -24,6 +24,7 @@
     "build:esm": "tsc --module es2020 --outDir dist --declaration false",
     "build:cjs": "tsc --module commonjs --outDir dist-cjs --declaration false && node scripts/build-cjs.js",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "postinstall": "npm run build",
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
