@@ -32,25 +32,30 @@ export const isEmpty = (any: any, opts: { trim?: boolean; deep?: boolean } = {})
     return any === 0;
 };
 
+
 /**
  * Soft merge - only merges properties that exist in base object
  */
-export const softMerge = (base: Record<string, any>, values: Record<string, any>, options: { deep?: boolean } = {}): Record<string, any> => {
+export const softMerge = (
+  base: Record<string, any>,
+  values: Record<string, any>,
+  options: { deep?: boolean } = {}
+): Record<string, any> => {
     const { deep = true } = options;
+    const result: Record<string, any> = {};
 
-    return Object.keys(base).reduce((result, key) => {
-        const valueExists = key in values;
-        const sourceObj = valueExists ? values : base;
-        const value = sourceObj[key];
+    for (const key of Object.keys(base)) {
+        const baseValue = base[key];
+        const hasValueKey = key in values;
 
-        if (deep && valueExists && isObject(base[key]) && isObject(value)) {
-            result[key] = softMerge(base[key], value, options);
+        if (deep && hasValueKey && isObject(baseValue) && isObject(values[key])) {
+            result[key] = softMerge(baseValue, values[key], options);
         } else {
-            result[key] = value;
+            result[key] = hasValueKey ? values[key] : baseValue;
         }
+    }
 
-        return result;
-    }, {} as Record<string, any>);
+    return result;
 };
 
 /**
@@ -61,22 +66,26 @@ export const deepMerge = (...objects: Record<string, any>[]): Record<string, any
         throw new Error('deepMerge: this function expects at least 2 objects to be provided');
     }
 
-    return objects.reduce((prev, obj) => {
-        Object.keys(obj).forEach((key) => {
-            const pVal = prev[key];
-            const oVal = obj[key];
+    let result = objects[0];
 
-            if (Array.isArray(pVal) && Array.isArray(oVal)) {
-                prev[key] = pVal.concat(...oVal);
-            } else if (isObject(pVal) && isObject(oVal)) {
-                prev[key] = deepMerge(pVal, oVal);
+    for (let i = 1; i < objects.length; i++) {
+        const obj = objects[i];
+
+        for (const key of Object.keys(obj)) {
+            const prevValue = result[key];
+            const currentValue = obj[key];
+
+            if (Array.isArray(prevValue) && Array.isArray(currentValue)) {
+                result[key] = prevValue.concat(...currentValue);
+            } else if (isObject(prevValue) && isObject(currentValue)) {
+                result[key] = deepMerge(prevValue, currentValue);
             } else {
-                prev[key] = oVal;
+                result[key] = currentValue;
             }
-        });
+        }
+    }
 
-        return prev;
-    }, {});
+    return result;
 };
 
 /**
@@ -282,50 +291,59 @@ export const deepClone = (obj: any): any => {
  * Flatten object with dot notation
  */
 export const flattenObject = (
-    ob: Record<string, any>,
-    prefix: string | false = false,
-    result: Record<string, any> | null = null,
-    options: { separator?: string; ignoreProperties?: string | string[] } = {}
+  ob: Record<string, any>,
+  prefix: string = '',
+  result: Record<string, any> = {},
+  options: { separator?: string; ignoreProperties?: string[] } = {}
 ): Record<string, any> => {
-    result = result || {};
     const separator = options.separator || '.';
-    const ignoreProps = options.ignoreProperties
-        ? Array.isArray(options.ignoreProperties)
-            ? options.ignoreProperties
-            : [options.ignoreProperties]
-        : [];
+    const ignorePropsSet = new Set(options.ignoreProperties || []);
 
-    if (
-        prefix &&
-        typeof ob === 'object' &&
-        ob !== null &&
-        Object.keys(ob).length === 0
-    ) {
-        result[prefix] = Array.isArray(ob) ? [] : {};
-        return result;
+    if (prefix && typeof ob === 'object' && ob !== null) {
+        const keys = Object.keys(ob);
+        if (keys.length === 0) {
+            result[prefix] = Array.isArray(ob) ? [] : {};
+            return result;
+        }
     }
 
-    const prefixStr = prefix ? prefix + separator : '';
+    for (const key of Object.keys(ob)) {
+        const value = ob[key];
+        const newKey = prefix ? `${prefix}${separator}${key}` : key;
 
-    for (const prop in ob) {
-        if (Object.prototype.hasOwnProperty.call(ob, prop)) {
-            if (typeof ob[prop] === 'object' && ob[prop] !== null) {
-                flattenObject(ob[prop], prefixStr + prop, result, options);
-            } else {
-                let propName = prop;
-                let previous = prefixStr;
-                if (ignoreProps.includes(prop)) {
-                    propName = '';
-                    previous =
-                        prefixStr.substring(0, prefixStr.lastIndexOf(separator)) +
-                        '' +
-                        prefixStr.substring(prefixStr.lastIndexOf(separator) + 1);
-                }
-                result[previous + propName] = ob[prop];
+        if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+            flattenObject(value, newKey, result, options);
+        } else {
+            if (!ignorePropsSet.has(key)) {
+                result[newKey] = value;
             }
         }
     }
+
     return result;
+};
+
+/**
+ * Gets nested object value by path
+ */
+export const getByPath = <T = any>(
+  obj: Record<string, any>,
+  path: string | string[],
+  defaultValue?: T
+): T | undefined => {
+    if (!obj || typeof obj !== 'object') return defaultValue;
+
+    const keys = Array.isArray(path) ? path : path.split('.');
+    let result: any = obj;
+
+    for (const key of keys) {
+        if (result == null || typeof result !== 'object') {
+            return defaultValue;
+        }
+        result = result[key];
+    }
+
+    return result !== undefined ? (result as T) : defaultValue;
 };
 
 /**

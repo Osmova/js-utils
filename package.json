@@ -1,6 +1,6 @@
 {
-  "name": "js-utils",
-  "version": "1.0.0",
+  "name": "@osmova/js-utils",
+  "version": "1.0.1",
   "description": "JavaScript/TypeScript utility functions",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -12,7 +12,10 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "repository": "git@github.com:bastVi/js-utils.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Osmova/js-utils.git"
+  },
   "author": "Bastien Viglianti <bastien.viglianti@gmail.com>",
   "license": "MIT",
   "private": true,
