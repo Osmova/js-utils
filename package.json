@@ -20,15 +20,15 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs && npm run build:types",
+    "build": "yarn build:esm && yarn build:cjs && yarn build:types",
     "build:esm": "tsc --module es2020 --outDir dist --declaration false",
     "build:cjs": "tsc --module commonjs --outDir dist-cjs --declaration false && node scripts/build-cjs.js",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
-    "prepare": "npm run build",
+    "prepare": "yarn build",
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "yarn build",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },
