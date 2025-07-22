@@ -37,9 +37,9 @@ export const isEmpty = (any: any, opts: { trim?: boolean; deep?: boolean } = {})
  * Soft merge - only merges properties that exist in base object
  */
 export const softMerge = (
-  base: Record<string, any>,
-  values: Record<string, any>,
-  options: { deep?: boolean } = {}
+    base: Record<string, any>,
+    values: Record<string, any>,
+    options: { deep?: boolean } = {}
 ): Record<string, any> => {
     const { deep = true } = options;
     const result: Record<string, any> = {};
@@ -291,10 +291,10 @@ export const deepClone = (obj: any): any => {
  * Flatten object with dot notation
  */
 export const flattenObject = (
-  ob: Record<string, any>,
-  prefix: string = '',
-  result: Record<string, any> = {},
-  options: { separator?: string; ignoreProperties?: string[] } = {}
+    ob: Record<string, any>,
+    prefix: string = '',
+    result: Record<string, any> = {},
+    options: { separator?: string; ignoreProperties?: string[] } = {}
 ): Record<string, any> => {
     const separator = options.separator || '.';
     const ignorePropsSet = new Set(options.ignoreProperties || []);
@@ -327,9 +327,9 @@ export const flattenObject = (
  * Gets nested object value by path
  */
 export const getByPath = <T = any>(
-  obj: Record<string, any>,
-  path: string | string[],
-  defaultValue?: T
+    obj: Record<string, any>,
+    path: string | string[],
+    defaultValue?: T
 ): T | undefined => {
     if (!obj || typeof obj !== 'object') return defaultValue;
 
@@ -347,54 +347,36 @@ export const getByPath = <T = any>(
 };
 
 /**
- * Deep equality check
+ * Check if a variable or nested object property exists and is defined
+ * @param target - The variable or path to check
+ * @param options - Configuration options
+ * @returns boolean - true if the variable exists and is defined
  */
-export const equal = (a: any, b: any): boolean => {
-    if (a === b) return true;
+export const isset = (
+    target: any,
+    options: { strict?: boolean; context?: any } = {}
+): boolean => {
+    const { strict = true, context } = options;
 
-    if (a && b && typeof a == 'object' && typeof b == 'object') {
-        if (a.constructor !== b.constructor) return false;
-
-        let length: number, i: any;
-        if (Array.isArray(a)) {
-            length = a.length;
-            if (length != b.length) return false;
-            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;
-            return true;
+    if (typeof target === 'string' && context) {
+        if (!context || typeof context !== 'object') {
+            return false;
         }
 
-        if (a instanceof Map && b instanceof Map) {
-            if (a.size !== b.size) return false;
-            for (i of a.entries()) if (!b.has(i[0])) return false;
-            for (i of a.entries()) if (!equal(i[1], b.get(i[0]))) return false;
-            return true;
-        }
+        const keys = target.split('.');
+        let current = context;
 
-        if (a instanceof Set && b instanceof Set) {
-            if (a.size !== b.size) return false;
-            for (i of a.entries()) if (!b.has(i[0])) return false;
-            return true;
-        }
-
-        if (ArrayBuffer.isView(a) && ArrayBuffer.isView(b)) {
-            // @ts-ignore
-            length = a.length;
-            // @ts-ignore
-            if (length != b.length) return false;
-            for (i = length; i-- !== 0; ) { // @ts-ignore
-                if (a[i] !== b[i]) return false;
+        for (const key of keys) {
+            if (current == null || typeof current !== 'object' || !(key in current)) {
+                return false;
             }
-            return true;
+            current = current[key];
         }
 
-        const keysA = Object.keys(a);
-        const keysB = Object.keys(b);
-        if (keysA.length != keysB.length) return false;
-
-        for (i of keysA) if (!keysB.includes(i) || !equal(a[i], b[i])) return false;
-
-        return true;
+        return strict ? current !== undefined : current !== undefined && current !== null;
     }
 
-    return a !== a && b !== b;
+    return strict ? target !== undefined : target !== undefined && target !== null;
 };
+
+export { equal } from './equal';

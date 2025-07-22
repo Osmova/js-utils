@@ -39,8 +39,8 @@
     "javascript"
   ],
   "dependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^24.0.14"
+    "@types/node": "^24.0.14",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
