@@ -2,6 +2,7 @@
  * Capitalizes the first letter of a string
  */
 export const capitalize = (str: string): string => {
+    if (!str) return str;
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
@@ -23,24 +24,14 @@ export const toCamelCase = camelize;
  * Converts camelCase to snake_case
  */
 export const camelToSnakeCase = (str: string): string => {
-    if (str === str.toUpperCase()) {
-        return str.toLowerCase();
-    }
-
-    return str
-    .split(/(?=[A-Z])/)
-    .map((word, index) => (index === 0 ? word : `_${word}`))
-    .join('')
-    .toLowerCase();
+    return str.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
 };
 
 /**
  * Creates a slug from a string
  */
 export const slugify = (string: string): string => {
-    if (!string) {
-        return '';
-    }
+    if (!string) return '';
     return string
     .toString()
     .normalize('NFD')
@@ -49,21 +40,23 @@ export const slugify = (string: string): string => {
     .trim()
     .replace(/\s+/g, '_')
     .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '_');
+    .replace(/__+/g, '_')
+    .replace(/^_+|_+$/g, '');
 };
 
 /**
  * Gets the basename of a path
  */
 export const basename = (str: string, sep: string = '/'): string => {
-    return str.substr(str.lastIndexOf(sep) + 1);
+    return str.slice(str.lastIndexOf(sep) + 1);
 };
 
 /**
  * Removes file extension from string
  */
 export const stripExtension = (str: string): string => {
-    return str.substr(0, str.lastIndexOf('.'));
+    const lastDot = str.lastIndexOf('.');
+    return lastDot === -1 ? str : str.slice(0, lastDot);
 };
 
 /**
@@ -137,14 +130,52 @@ export const truncate = (
 };
 
 /**
+ * Validates if a string is a valid email address
+ * @param {string} str - The email string to validate
+ * @returns {boolean} - True if valid email, false otherwise
+ */
+export const isEmail = (str: string): boolean => {
+    if (!str || typeof str !== 'string') return false;
+
+    const trimmedEmail = str.trim();
+
+    if (trimmedEmail.length === 0 || trimmedEmail.length > 254) {
+        return false;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    if (!emailRegex.test(trimmedEmail)) {
+        return false;
+    }
+
+    const parts = trimmedEmail.split('@');
+    if (parts.length !== 2) {
+        return false;
+    }
+
+    const [localPart, domainPart] = parts;
+
+    if (localPart.length === 0 || localPart.length > 64 ||
+        domainPart.length === 0 || domainPart.length > 253) {
+        return false;
+    }
+
+    return !(trimmedEmail.includes('..') ||
+        localPart.startsWith('.') || localPart.endsWith('.') ||
+        domainPart.startsWith('.') || domainPart.endsWith('.'));
+};
+
+/**
  * Converts RGB to hex
  */
-export const rgb2hex = (rgb: string): string =>
-    `#${rgb
-    .match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)
-    ?.slice(1)
-    .map((n) => parseInt(n, 10).toString(16).padStart(2, '0'))
-    .join('') || ''}`;
+export const rgb2hex = (rgb: string): string => {
+    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!match) return '';
+    return `#${match.slice(1)
+    .map(n => parseInt(n, 10).toString(16).padStart(2, '0'))
+    .join('')}`;
+};
 
 /**
  * Composes URL parts
@@ -160,26 +191,45 @@ export const composeURL = (...parts: string[]): string => {
 /**
  * Generates a secure password
  */
-export const generatePassword = (options: { length?: number } = {}): string => {
-    const { length = 12 } = options;
-    const charset =
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
+export const generatePassword = (options: {
+    length?: number;
+    symbols?: boolean
+} = {}): string => {
+    const { length = 12, symbols = true } = options;
 
-    // Ensure at least one of each type
-    password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
-    password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
-    password += '0123456789'[Math.floor(Math.random() * 10)];
-    password += '!@#$%^&*'[Math.floor(Math.random() * 8)];
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const symbolChars = '!@#$%^&*';
 
-    // Fill the rest randomly
-    for (let i = password.length; i < length; i++) {
-        password += charset[Math.floor(Math.random() * charset.length)];
+    let charset = lowercase + uppercase + numbers;
+    if (symbols) {
+        charset += symbolChars;
     }
 
-    // Shuffle the password
-    return password
-    .split('')
-    .sort(() => Math.random() - 0.5)
-    .join('');
+    const getRandomChar = (chars: string): string => {
+        const array = new Uint8Array(1);
+        crypto.getRandomValues(array);
+        return chars[array[0] % chars.length];
+    };
+
+    let password = '';
+
+    password += getRandomChar(uppercase);
+    password += getRandomChar(lowercase);
+    password += getRandomChar(numbers);
+
+    if (symbols) {
+        password += getRandomChar(symbolChars);
+    }
+
+    for (let i = password.length; i < length; i++) {
+        password += getRandomChar(charset);
+    }
+
+    return password.split('').sort(() => {
+        const array = new Uint8Array(1);
+        crypto.getRandomValues(array);
+        return (array[0] % 3) - 1;
+    }).join('');
 };
