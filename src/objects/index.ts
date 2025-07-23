@@ -379,4 +379,110 @@ export const isset = (
     return strict ? target !== undefined : target !== undefined && target !== null;
 };
 
+
+/**
+ * Converts various inputs to FormData with advanced options
+ * Supports objects, DOM form elements, and JSON strings
+ */
+export const toFormData = (
+    input: Record<string, any> | HTMLFormElement | string,
+    options: {
+        ignoreFields?: string[];
+        ignoreUnset?: boolean;
+        ignoreEmpty?: boolean;
+        serializeBooleans?: boolean;
+        namespace?: string;
+        formData?: FormData;
+    } = {}
+): FormData => {
+    const {
+        ignoreFields = [],
+        ignoreUnset = true,
+        ignoreEmpty = false,
+        serializeBooleans = false,
+        namespace = '',
+        formData = new FormData()
+    } = options;
+
+    let processedInput: Record<string, any>;
+
+    if (typeof input === 'string') {
+        try {
+            processedInput = JSON.parse(input);
+        } catch (error) {
+            throw new Error('Invalid JSON string provided to toFormData');
+        }
+    } else if (input instanceof HTMLFormElement) {
+        const formDataObj = new FormData(input);
+        processedInput = {};
+
+        // @ts-ignore
+        for (const [key, value] of formDataObj.entries()) {
+            if (processedInput[key]) {
+                if (Array.isArray(processedInput[key])) {
+                    processedInput[key].push(value);
+                } else {
+                    processedInput[key] = [processedInput[key], value];
+                }
+            } else {
+                processedInput[key] = value;
+            }
+        }
+    } else if (typeof input === 'object' && input !== null) {
+        processedInput = input;
+    } else {
+        throw new Error('Input must be an object, HTMLFormElement, or JSON string');
+    }
+
+    if (ignoreUnset || ignoreEmpty) {
+        processedInput = removeUnsetValues(processedInput, {
+            removeEmpty: ignoreEmpty,
+            emptyOptions: { trim: true, deep: true }
+        });
+    }
+
+    const processObject = (obj: Record<string, any>, currentNamespace: string = namespace) => {
+        for (const property in obj) {
+            if (!obj.hasOwnProperty(property) || ignoreFields.includes(property)) {
+                continue;
+            }
+
+            const fieldName = currentNamespace ? `${currentNamespace}[${property}]` : property;
+            const value = obj[property];
+
+            if (value == null) {
+                if (!ignoreUnset) {
+                    formData.append(fieldName, '');
+                }
+            } else if (value instanceof File || value instanceof Blob) {
+                formData.append(fieldName, value);
+            } else if (Array.isArray(value)) {
+                value.forEach((item, index) => {
+                    const arrayFieldName = `${fieldName}[${index}]`;
+                    if (item instanceof File || item instanceof Blob) {
+                        formData.append(arrayFieldName, item);
+                    } else if (typeof item === 'object' && item !== null) {
+                        processObject({ [index]: item }, fieldName);
+                    } else {
+                        const serializedItem = serializeBooleans && typeof item === 'boolean'
+                            ? (item ? '1' : '0')
+                            : String(item);
+                        formData.append(arrayFieldName, serializedItem);
+                    }
+                });
+            } else if (typeof value === 'object' && value !== null) {
+                processObject(value, fieldName);
+            } else {
+                const serializedValue = serializeBooleans && typeof value === 'boolean'
+                    ? (value ? '1' : '0')
+                    : String(value);
+                formData.append(fieldName, serializedValue);
+            }
+        }
+    };
+
+    processObject(processedInput);
+    return formData;
+};
+
 export { equal } from './equal';
