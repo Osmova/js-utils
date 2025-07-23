@@ -264,20 +264,38 @@ export const clone = (obj: any, options: { deep?: boolean } = {}): any => {
         return obj;
     }
 
+    // Handle built-in types
     if (obj instanceof Date) return new Date(obj.getTime());
-
     if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags);
-
-    // Handle File objects (preserve all properties)
     if (obj instanceof File) {
-        return new File([obj], obj.name, {
+        const newFile = new File([obj], obj.name, {
             type: obj.type,
             lastModified: obj.lastModified
         });
+
+        // Copy any additional custom properties
+        const descriptors = Object.getOwnPropertyDescriptors(obj);
+        for (const key of Object.getOwnPropertyNames(obj)) {
+            if (!['name', 'size', 'type', 'lastModified', 'lastModifiedDate', 'webkitRelativePath'].includes(key)) {
+                const descriptor = descriptors[key];
+                if (descriptor && descriptor.configurable !== false) {
+                    try {
+                        Object.defineProperty(newFile, key, {
+                            ...descriptor,
+                            value: deep ? clone(descriptor.value, options) : descriptor.value
+                        });
+                    } catch (e) {
+                        // Fallback for non-configurable properties
+                        // @ts-ignore
+                        (newFile as any)[key] = deep ? clone(obj[key], options) : obj[key];
+                    }
+                }
+            }
+        }
+
+        return newFile;
     }
-
     if (obj instanceof Blob) return new Blob([obj], { type: obj.type });
-
     if (obj instanceof ArrayBuffer) return obj.slice(0);
 
     // Handle typed arrays
@@ -291,42 +309,35 @@ export const clone = (obj: any, options: { deep?: boolean } = {}): any => {
     if (obj instanceof Float32Array) return new Float32Array(obj);
     if (obj instanceof Float64Array) return new Float64Array(obj);
 
-    // Handle Map objects
+    // Handle Map
     if (obj instanceof Map) {
         const clonedMap = new Map();
-        if (deep) {
-            obj.forEach((value, key) => {
-                clonedMap.set(clone(key, options), clone(value, options));
-            });
-        } else {
-            obj.forEach((value, key) => {
-                clonedMap.set(key, value);
-            });
-        }
+        obj.forEach((value, key) => {
+            clonedMap.set(
+                deep ? clone(key, options) : key,
+                deep ? clone(value, options) : value
+            );
+        });
         return clonedMap;
     }
 
-    // Handle Set objects
+    // Handle Set
     if (obj instanceof Set) {
         const clonedSet = new Set();
-        if (deep) {
-            obj.forEach(value => {
-                clonedSet.add(clone(value, options));
-            });
-        } else {
-            obj.forEach(value => {
-                clonedSet.add(value);
-            });
-        }
+        obj.forEach(value => {
+            clonedSet.add(deep ? clone(value, options) : value);
+        });
         return clonedSet;
     }
 
-    // Handle WeakMap and WeakSet (cannot be cloned, return new empty instances)
+    // Handle WeakMap and WeakSet
     if (obj instanceof WeakMap) return new WeakMap();
     if (obj instanceof WeakSet) return new WeakSet();
 
-    if (typeof obj === 'function') return obj.bind(null);
+    // Handle functions
+    if (typeof obj === 'function') return obj;
 
+    // Handle arrays
     if (Array.isArray(obj)) {
         return deep ? obj.map(item => clone(item, options)) : [...obj];
     }
@@ -340,33 +351,46 @@ export const clone = (obj: any, options: { deep?: boolean } = {}): any => {
     }
 
     // Handle plain objects and other object types
-    const clonedObj: any = {};
+    const clonedObj: any = Object.create(Object.getPrototypeOf(obj));
 
-    // Copy prototype if it's not Object.prototype
-    if (obj.constructor !== Object && obj.constructor) {
-        Object.setPrototypeOf(clonedObj, Object.getPrototypeOf(obj));
-    }
+    // Get all property descriptors (enumerable and non-enumerable)
+    const descriptors = Object.getOwnPropertyDescriptors(obj);
 
-    // Copy enumerable properties
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            if (deep) {
-                clonedObj[key] = clone(obj[key], options);
-            } else {
-                clonedObj[key] = obj[key];
-            }
+    for (const key of Object.getOwnPropertyNames(obj)) {
+        const descriptor = descriptors[key];
+
+        if (!descriptor) continue;
+
+        // Handle data properties
+        if ('value' in descriptor) {
+            Object.defineProperty(clonedObj, key, {
+                ...descriptor,
+                value: deep ? clone(descriptor.value, options) : descriptor.value
+            });
+        }
+        // Handle accessor properties (getters/setters)
+        else if (descriptor.get || descriptor.set) {
+            Object.defineProperty(clonedObj, key, {
+                ...descriptor,
+                get: descriptor.get,
+                set: descriptor.set
+            });
         }
     }
 
-    // Copy non-enumerable properties
-    const descriptors = Object.getOwnPropertyDescriptors(obj);
-    for (const key in descriptors) {
-        if (!descriptors[key].enumerable && descriptors[key].configurable) {
-            const descriptor = { ...descriptors[key] };
-            if (deep && descriptor.value !== undefined) {
-                descriptor.value = clone(descriptor.value, options);
+    // Handle symbol properties
+    const symbols = Object.getOwnPropertySymbols(obj);
+    for (const symbol of symbols) {
+        const descriptor = Object.getOwnPropertyDescriptor(obj, symbol);
+        if (descriptor) {
+            if ('value' in descriptor) {
+                Object.defineProperty(clonedObj, symbol, {
+                    ...descriptor,
+                    value: deep ? clone(descriptor.value, options) : descriptor.value
+                });
+            } else {
+                Object.defineProperty(clonedObj, symbol, descriptor);
             }
-            Object.defineProperty(clonedObj, key, descriptor);
         }
     }
 
