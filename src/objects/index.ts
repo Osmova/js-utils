@@ -251,40 +251,134 @@ export const diff = (
 };
 
 /**
- * Deep clone with File support
+ * Clone function with support for various object types
+ * @param obj - The object to clone
+ * @param options - Clone options
+ * @returns Cloned object
  */
-export const deepClone = (obj: any): any => {
-    if (typeof obj !== 'object' || obj === null) {
+export const clone = (obj: any, options: { deep?: boolean } = {}): any => {
+    const { deep = true } = options;
+
+    // Handle primitives and null/undefined
+    if (obj === null || obj === undefined || typeof obj !== 'object') {
         return obj;
     }
 
-    let clone: any;
+    if (obj instanceof Date) return new Date(obj.getTime());
 
-    if (obj instanceof Date) {
-        clone = new Date(obj.getTime());
-    } else if (obj instanceof Array) {
-        clone = [];
-        for (let i = 0; i < obj.length; i++) {
-            clone[i] = deepClone(obj[i]);
+    if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags);
+
+    // Handle File objects (preserve all properties)
+    if (obj instanceof File) {
+        return new File([obj], obj.name, {
+            type: obj.type,
+            lastModified: obj.lastModified
+        });
+    }
+
+    if (obj instanceof Blob) return new Blob([obj], { type: obj.type });
+
+    if (obj instanceof ArrayBuffer) return obj.slice(0);
+
+    // Handle typed arrays
+    if (obj instanceof Int8Array) return new Int8Array(obj);
+    if (obj instanceof Uint8Array) return new Uint8Array(obj);
+    if (obj instanceof Uint8ClampedArray) return new Uint8ClampedArray(obj);
+    if (obj instanceof Int16Array) return new Int16Array(obj);
+    if (obj instanceof Uint16Array) return new Uint16Array(obj);
+    if (obj instanceof Int32Array) return new Int32Array(obj);
+    if (obj instanceof Uint32Array) return new Uint32Array(obj);
+    if (obj instanceof Float32Array) return new Float32Array(obj);
+    if (obj instanceof Float64Array) return new Float64Array(obj);
+
+    // Handle Map objects
+    if (obj instanceof Map) {
+        const clonedMap = new Map();
+        if (deep) {
+            obj.forEach((value, key) => {
+                clonedMap.set(clone(key, options), clone(value, options));
+            });
+        } else {
+            obj.forEach((value, key) => {
+                clonedMap.set(key, value);
+            });
         }
-    } else if (obj instanceof Function) {
-        clone = obj.bind(null);
-    } else if (obj instanceof File) {
-        clone = new File([obj], obj.name, { type: obj.type });
-    } else {
-        clone = {};
-        for (let key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                if (typeof obj[key] === 'object' && obj[key] !== null) {
-                    clone[key] = deepClone(obj[key]);
-                } else {
-                    Object.defineProperty(clone, key, Object.getOwnPropertyDescriptor(obj, key)!);
-                }
+        return clonedMap;
+    }
+
+    // Handle Set objects
+    if (obj instanceof Set) {
+        const clonedSet = new Set();
+        if (deep) {
+            obj.forEach(value => {
+                clonedSet.add(clone(value, options));
+            });
+        } else {
+            obj.forEach(value => {
+                clonedSet.add(value);
+            });
+        }
+        return clonedSet;
+    }
+
+    // Handle WeakMap and WeakSet (cannot be cloned, return new empty instances)
+    if (obj instanceof WeakMap) return new WeakMap();
+    if (obj instanceof WeakSet) return new WeakSet();
+
+    if (typeof obj === 'function') return obj.bind(null);
+
+    if (Array.isArray(obj)) {
+        return deep ? obj.map(item => clone(item, options)) : [...obj];
+    }
+
+    // Handle Error objects
+    if (obj instanceof Error) {
+        const clonedError = new (obj.constructor as any)(obj.message);
+        clonedError.name = obj.name;
+        clonedError.stack = obj.stack;
+        return clonedError;
+    }
+
+    // Handle plain objects and other object types
+    const clonedObj: any = {};
+
+    // Copy prototype if it's not Object.prototype
+    if (obj.constructor !== Object && obj.constructor) {
+        Object.setPrototypeOf(clonedObj, Object.getPrototypeOf(obj));
+    }
+
+    // Copy enumerable properties
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            if (deep) {
+                clonedObj[key] = clone(obj[key], options);
+            } else {
+                clonedObj[key] = obj[key];
             }
         }
     }
 
-    return clone;
+    // Copy non-enumerable properties
+    const descriptors = Object.getOwnPropertyDescriptors(obj);
+    for (const key in descriptors) {
+        if (!descriptors[key].enumerable && descriptors[key].configurable) {
+            const descriptor = { ...descriptors[key] };
+            if (deep && descriptor.value !== undefined) {
+                descriptor.value = clone(descriptor.value, options);
+            }
+            Object.defineProperty(clonedObj, key, descriptor);
+        }
+    }
+
+    return clonedObj;
+};
+
+/**
+ * Deep clone with File support
+ * @deprecated Use clone() function with deep: true option instead
+ */
+export const deepClone = (obj: any): any => {
+    return clone(obj, { deep: true });
 };
 
 /**
