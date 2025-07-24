@@ -152,6 +152,35 @@ export const removeUnsetValues = (
     const { removeEmpty = false, emptyOptions = { trim: true, deep: false } } = options;
 
     if (obj === null || typeof obj !== 'object') return obj;
+    
+    // Handle special object types that should not be processed recursively
+    if (
+        obj instanceof File ||
+        obj instanceof Blob ||
+        obj instanceof Date ||
+        obj instanceof RegExp ||
+        obj instanceof ArrayBuffer ||
+        obj instanceof DataView ||
+        obj instanceof Map ||
+        obj instanceof Set ||
+        obj instanceof WeakMap ||
+        obj instanceof WeakSet ||
+        obj instanceof Error ||
+        // Handle typed arrays
+        obj instanceof Int8Array ||
+        obj instanceof Uint8Array ||
+        obj instanceof Uint8ClampedArray ||
+        obj instanceof Int16Array ||
+        obj instanceof Uint16Array ||
+        obj instanceof Int32Array ||
+        obj instanceof Uint32Array ||
+        obj instanceof Float32Array ||
+        obj instanceof Float64Array ||
+        obj instanceof BigInt64Array ||
+        obj instanceof BigUint64Array
+    ) {
+        return obj;
+    }
 
     if (Array.isArray(obj)) {
         return obj
