@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Utils Browser Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #007acc;
+            background-color: #f8f9fa;
+        }
+        .test-result {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .summary.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .summary.failure {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #005a9e;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 JS Utils Browser Tests</h1>
+        <p>This page tests the js-utils library in a browser environment.</p>
+        
+        <div>
+            <button onclick="runTests()">Run All Tests</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <!-- Load the utils library -->
+    <script type="module">
+        // Import from the built ES module
+        import * as utils from '../dist/index.js';
+        window.utils = utils;
+        
+        let passed = 0;
+        let failed = 0;
+        
+        function addResult(section, name, success, message = '') {
+            const resultsDiv = document.getElementById('results');
+            let sectionDiv = document.getElementById(`section-${section}`);
+            
+            if (!sectionDiv) {
+                sectionDiv = document.createElement('div');
+                sectionDiv.id = `section-${section}`;
+                sectionDiv.className = 'test-section';
+                sectionDiv.innerHTML = `<h3>📦 ${section} utilities:</h3>`;
+                resultsDiv.appendChild(sectionDiv);
+            }
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${success ? 'pass' : 'fail'}`;
+            resultDiv.innerHTML = `${success ? '✅' : '❌'} ${name}${message ? ': ' + message : ''}`;
+            sectionDiv.appendChild(resultDiv);
+            
+            if (success) passed++;
+            else failed++;
+        }
+        
+        function test(section, name, fn) {
+            try {
+                const result = fn();
+                if (result instanceof Promise) {
+                    return result.then(() => {
+                        addResult(section, name, true);
+                    }).catch(error => {
+                        addResult(section, name, false, error.message);
+                    });
+                } else {
+                    addResult(section, name, true);
+                    return Promise.resolve();
+                }
+            } catch (error) {
+                addResult(section, name, false, error.message);
+                return Promise.resolve();
+            }
+        }
+        
+        window.runTests = async function() {
+            passed = 0;
+            failed = 0;
+            document.getElementById('results').innerHTML = '';
+            
+            console.log('🧪 Testing js-utils in Browser environment');
+            
+            // String utilities
+            await test('String', 'capitalize', () => {
+                const result = utils.capitalize('hello');
+                if (result !== 'Hello') throw new Error(`Expected "Hello", got "${result}"`);
+            });
+            
+            await test('String', 'slugify', () => {
+                const result = utils.slugify('Hello World!');
+                if (result !== 'hello_world') throw new Error(`Expected "hello_world", got "${result}"`);
+            });
+            
+            await test('String', 'isValidURL', () => {
+                if (!utils.isValidURL('https://example.com')) throw new Error('Expected true for valid URL');
+                if (utils.isValidURL('invalid-url')) throw new Error('Expected false for invalid URL');
+            });
+            
+            // Object utilities
+            await test('Object', 'isObject', () => {
+                if (!utils.isObject({})) throw new Error('Expected true for {}');
+                if (utils.isObject('string')) throw new Error('Expected false for string');
+            });
+            
+            await test('Object', 'isEmpty', () => {
+                if (!utils.isEmpty([])) throw new Error('Expected true for []');
+                if (utils.isEmpty([1])) throw new Error('Expected false for [1]');
+            });
+            
+            await test('Object', 'deepMerge', () => {
+                const result = utils.deepMerge({a: {x: 1}}, {a: {y: 2}});
+                if (result.a.x !== 1 || result.a.y !== 2) throw new Error('Deep merge failed');
+            });
+            
+            // Date utilities
+            await test('Date', 'parseDate', () => {
+                const result = utils.parseDate('2023-01-01');
+                if (!(result instanceof Date)) throw new Error('Expected Date object');
+            });
+            
+            // Async utilities
+            await test('Async', 'sleep', async () => {
+                const start = Date.now();
+                await utils.sleep(100);
+                const elapsed = Date.now() - start;
+                if (elapsed < 90) throw new Error(`Sleep too short: ${elapsed}ms`);
+            });
+            
+            await test('Async', 'retry', async () => {
+                let attempts = 0;
+                const result = await utils.retry(() => {
+                    attempts++;
+                    if (attempts < 2) throw new Error('Fail');
+                    return 'success';
+                }, 3, 10);
+                if (result !== 'success') throw new Error('Retry failed');
+            });
+            
+            // Function utilities
+            await test('Function', 'debounce', () => {
+                return new Promise((resolve, reject) => {
+                    let called = 0;
+                    const fn = utils.debounce(() => called++, 50);
+                    fn();
+                    fn();
+                    fn();
+                    setTimeout(() => {
+                        if (called === 1) resolve();
+                        else reject(new Error(`Expected 1 call, got ${called}`));
+                    }, 100);
+                });
+            });
+            
+            await test('Function', 'genUuid v4', () => {
+                const uuid = utils.genUuid();
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(uuid)) throw new Error(`Invalid UUID v4: ${uuid}`);
+            });
+            
+            await test('Function', 'genUuid v1', () => {
+                const uuid = utils.genUuid({ version: 1 });
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(uuid)) throw new Error(`Invalid UUID v1: ${uuid}`);
+            });
+            
+            await test('Function', 'loadExternalScript', async () => {
+                // Test with a simple script that sets a global variable
+                const testScript = 'data:text/javascript,window.testScriptLoaded = true;';
+                await utils.loadExternalScript(testScript);
+                if (!window.testScriptLoaded) throw new Error('Script was not loaded');
+            });
+            
+            // Validation utilities
+            await test('Validation', 'isValidHex', () => {
+                if (!utils.isValidHex('#ff0000')) throw new Error('Expected true for #ff0000');
+                if (utils.isValidHex('invalid')) throw new Error('Expected false for invalid');
+            });
+            
+            await test('Validation', 'isValidColor', () => {
+                if (!utils.isValidColor('red')) throw new Error('Expected true for named color');
+                if (!utils.isValidColor('#ff0000')) throw new Error('Expected true for hex color');
+                if (utils.isValidColor('invalid')) throw new Error('Expected false for invalid color');
+            });
+            
+            // Show summary
+            setTimeout(() => {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = `summary ${failed > 0 ? 'failure' : 'success'}`;
+                summaryDiv.innerHTML = `📊 Test Results: ${passed} passed, ${failed} failed`;
+                document.getElementById('results').appendChild(summaryDiv);
+                
+                if (failed === 0) {
+                    const successDiv = document.createElement('div');
+                    successDiv.innerHTML = '🎉 All tests passed!';
+                    successDiv.style.textAlign = 'center';
+                    successDiv.style.marginTop = '10px';
+                    successDiv.style.fontSize = '18px';
+                    document.getElementById('results').appendChild(successDiv);
+                }
+                
+                // Expose results for Puppeteer
+                window.testResults = {
+                    passed: passed,
+                    failed: failed,
+                    total: passed + failed,
+                    details: [] // Could be enhanced to include individual test details
+                };
+                
+                console.log(`📊 Test Results: ${passed} passed, ${failed} failed`);
+            }, 200);
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+            passed = 0;
+            failed = 0;
+        };
+        
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

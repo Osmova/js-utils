@@ -13,3 +13,6 @@ export * from './async';
 
 // Validation utilities
 export * from './validation';
+
+// Misc utilities
+export * from './functions';

@@ -1,6 +1,6 @@
 {
   "name": "@osmova/js-utils",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "JavaScript/TypeScript utility functions",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -28,6 +28,9 @@
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:node": "node tests/node-test.js",
+    "test:browser": "node tests/browser-test-runner.js",
+    "test:all": "yarn test:node && yarn test:browser",
     "prepublishOnly": "yarn build",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
@@ -48,6 +51,7 @@
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
     "jest": "^29.5.0",
+    "puppeteer": "^21.0.0",
     "ts-jest": "^29.1.0"
   },
   "files": [
