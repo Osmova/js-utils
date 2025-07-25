@@ -60,6 +60,30 @@ export const stripExtension = (str: string): string => {
 };
 
 /**
+ * Checks if a string looks like a file path
+ */
+export const isFilePath = (str: string, options: { strict?: boolean } = {}): boolean => {
+    if (!str || typeof str !== 'string') return false;
+    
+    const { strict = false } = options;
+
+    // Basic path patterns
+    const hasPathSeparators = str.includes('/') || str.includes('\\');
+    
+    if (strict) {
+        const hasExtension = /\.[a-zA-Z0-9]{1,10}$/.test(str);
+        return hasPathSeparators && hasExtension;
+    }
+
+    const hasExtension = /\.[a-zA-Z0-9]{1,10}$/.test(str);
+    return hasPathSeparators ||
+        hasExtension ||
+        str.startsWith('./') ||
+        str.startsWith('../') ||
+        str.startsWith('/');
+};
+
+/**
  * Validates if string is a valid URL
  */
 export const isValidURL = (str: string, opts: { strict?: boolean } = {}): boolean => {
