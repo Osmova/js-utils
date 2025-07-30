@@ -154,6 +154,36 @@ export const truncate = (
 };
 
 /**
+ * Strips HTML tags from a string
+ *
+ * @param html - The HTML string to strip
+ * @returns The plain text content without HTML tags
+ */
+export const stripHtml = (html: string | null | undefined): string => {
+    if (!html) return '';
+
+    // Browser env - use DOM methods
+    if (typeof document !== 'undefined') {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    }
+
+    // Node.js env - use regex fallback
+    return html
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+/**
  * Validates if a string is a valid email address
  * @param {string} str - The email string to validate
  * @returns {boolean} - True if valid email, false otherwise
