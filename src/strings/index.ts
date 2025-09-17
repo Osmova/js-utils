@@ -232,15 +232,19 @@ export const rgb2hex = (rgb: string): string => {
 };
 
 /**
- * Composes URL parts
+ * Composes path segments into a single path
  */
-export const composeURL = (...parts: string[]): string => {
+export const composePath = (...parts: (string | undefined | null)[]): string => {
     return parts
-    .map((part) => {
-        return part.replace(/^\/+|\/+$/g, '');
-    })
+    .filter((part): part is string => typeof part === 'string' && !isEmpty(part))
+    .map((part) => part.replace(/^\/+|\/+$/g, ''))
     .join('/');
 };
+
+/**
+ * @deprecated Use composePath
+ */
+export const composeURL = composePath;
 
 /**
  * Generates a secure password
@@ -287,3 +291,4 @@ export const generatePassword = (options: {
         return (array[0] % 3) - 1;
     }).join('');
 };
+
