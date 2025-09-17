@@ -292,3 +292,73 @@ export const generatePassword = (options: {
     }).join('');
 };
 
+/**
+ * Parse a string value to its appropriate type
+ */
+export const parseStringValue = (
+    value: any,
+    options: { parseBool?: boolean; parseNumeric?: boolean; parseJson?: boolean } = {}
+): any => {
+    const {
+        parseBool = true,
+        parseNumeric = true,
+        parseJson = true
+    } = options;
+
+    if (typeof value !== 'string') return value;
+
+    if (value === '') return value;
+
+    if (value.toLowerCase() === 'null') return null;
+
+    if (parseBool) {
+        if (value.toLowerCase() === 'true') return true;
+        if (value.toLowerCase() === 'false') return false;
+    }
+
+    if (parseNumeric && isNumeric(value)) {
+        const numValue = parseFloat(value);
+        return Number.isInteger(numValue) ? parseInt(value, 10) : numValue;
+    }
+
+    if (parseJson && ((value.startsWith('{') && value.endsWith('}')) ||
+        (value.startsWith('[') && value.endsWith(']')))) {
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            console.warn(`Failed to parse string value as JSON:`, error);
+            return value;
+        }
+    }
+
+    return value;
+};
+
+/**
+ * Trims a specific character from the start and/or end of a string
+ */
+export const trimStr = (
+    str: string,
+    char: string = ' ',
+    options: { start?: boolean; end?: boolean } = {}
+): string => {
+    if (!str || typeof str !== 'string') return str;
+    if (!char || typeof char !== 'string') return str;
+
+    const { start = true, end = true } = options;
+    let result = str;
+
+    if (start) {
+        const startRegex = new RegExp(`^\\${char}+`);
+        result = result.replace(startRegex, '');
+    }
+
+    if (end) {
+        const endRegex = new RegExp(`\\${char}+$`);
+        result = result.replace(endRegex, '');
+    }
+
+    return result;
+};
+
+
