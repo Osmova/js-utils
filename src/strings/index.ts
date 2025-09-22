@@ -1,3 +1,5 @@
+import { isEmpty, isNumeric } from "../objects";
+
 /**
  * Capitalizes the first letter of a string
  */
