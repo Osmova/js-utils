@@ -14,5 +14,8 @@ export * from './async';
 // Validation utilities
 export * from './validation';
 
+// Color utilities
+export * from './colors';
+
 // Misc utilities
 export * from './functions';
