@@ -19,7 +19,6 @@ export const parseLanguageCode = (
 
 /**
  * Validates CSS property and value
- * Note: This function has limited functionality in Node.js environments
  */
 export const isValidCss = (prop: string, val: string): boolean => {
     if (prop === 'color') {
@@ -29,10 +28,8 @@ export const isValidCss = (prop: string, val: string): boolean => {
     if (prop === 'length') return false;
     if (val === '') return true;
 
-    // For browser environments with DOM access
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         try {
-            // Create a temporary element to test CSS
             const testElement = document.createElement('div');
             const style = testElement.style as any;
 
@@ -45,8 +42,6 @@ export const isValidCss = (prop: string, val: string): boolean => {
         }
     }
 
-    // Basic validation for Node.js environments
-    // You might want to add more specific validation rules here
     return typeof val === 'string' && val.length > 0;
 };
 
@@ -71,17 +66,15 @@ export const isValidHex = (color: string): boolean => {
 };
 
 /**
- * Basic color validation that works in both browser and Node.js
+ * Validates color string (hex, named, rgb, hsl)
  */
 export const isValidColor = (color: string): boolean => {
     if (!color || typeof color !== 'string') return false;
 
-    // Check if it's a hex color
     if (color.startsWith('#')) {
         return isValidHex(color);
     }
 
-    // Check if it's a named color (basic list)
     const namedColors = [
         'black', 'white', 'red', 'green', 'blue', 'yellow', 'orange', 'purple',
         'pink', 'brown', 'gray', 'grey', 'cyan', 'magenta', 'lime', 'navy',
@@ -92,13 +85,11 @@ export const isValidColor = (color: string): boolean => {
         return true;
     }
 
-    // Check if it's rgb() or rgba()
     const rgbRegex = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*[01]?(?:\.\d+)?)?\s*\)$/;
     if (rgbRegex.test(color)) {
         return true;
     }
 
-    // Check if it's hsl() or hsla()
     const hslRegex = /^hsla?\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*(?:,\s*[01]?(?:\.\d+)?)?\s*\)$/;
     if (hslRegex.test(color)) {
         return true;
