@@ -1,21 +1,21 @@
 
 // String utilities
-export * from './strings';
+export * from './strings/index.js';
 
 // Object utilities
-export * from './objects';
+export * from './objects/index.js';
 
 // Date utilities
-export * from './dates';
+export * from './dates/index.js';
 
 // Async utilities
-export * from './async';
+export * from './async/index.js';
 
 // Validation utilities
-export * from './validation';
+export * from './validation/index.js';
 
 // Color utilities
-export * from './colors';
+export * from './colors/index.js';
 
 // Misc utilities
-export * from './functions';
+export * from './functions/index.js';

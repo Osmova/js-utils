@@ -2,7 +2,7 @@
  * Color manipulation utilities
  */
 
-import { isValidHex } from '../validation';
+import { isValidHex } from '../validation/index.js';
 
 /**
  * Normalizes hex color to 6-digit format with # prefix

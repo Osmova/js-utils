@@ -1,4 +1,4 @@
-import { isEmpty, isNumeric } from "../objects";
+import { isEmpty, isNumeric } from "../objects/index.js";
 
 /**
  * Capitalizes the first letter of a string

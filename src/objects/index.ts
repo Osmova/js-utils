@@ -632,4 +632,4 @@ export const toFormData = (
     return formData;
 };
 
-export { equal } from './equal';
+export { equal } from './equal.js';
