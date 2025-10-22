@@ -89,3 +89,67 @@ export const genUuid = (options: { version?: 1 | 4 } = {}): string => {
     
     throw new Error(`Unsupported UUID version: ${version}`);
 };
+
+/**
+ * Throttle function execution to limit frequency
+ * Executes immediately on first call, then limits subsequent calls
+ * @param func - Function to throttle
+ * @param delay - Minimum time between executions in milliseconds
+ * @param options - Throttle options
+ * @returns Throttled function
+ *
+ * @example
+ * const throttledScroll = throttle(() => console.log('Scrolling'), 1000);
+ * window.addEventListener('scroll', throttledScroll);
+ *
+ * const throttledResize = throttle(handleResize, 500, { trailing: true });
+ * window.addEventListener('resize', throttledResize);
+ */
+export const throttle = <T extends (...args: any[]) => any>(
+    func: T,
+    delay: number,
+    options: { leading?: boolean; trailing?: boolean } = {}
+): ((...args: Parameters<T>) => void) => {
+    const { leading = true, trailing = false } = options;
+    let timeout: NodeJS.Timeout | undefined;
+    let lastRan: number | undefined;
+    let lastArgs: Parameters<T> | undefined;
+    let lastContext: any;
+
+    const invokeFunc = () => {
+        if (lastArgs) {
+            func.apply(lastContext, lastArgs);
+            lastRan = Date.now();
+            lastArgs = undefined;
+        }
+    };
+
+    return function (this: any, ...args: Parameters<T>) {
+        const context = this;
+        const now = Date.now();
+
+        const isFirstCall = !lastRan;
+
+        if (isFirstCall && !leading) {
+            lastRan = now;
+        }
+
+        const remaining = delay - (lastRan ? now - lastRan : 0);
+
+        lastArgs = args;
+        lastContext = context;
+
+        if (remaining <= 0 || remaining > delay || (isFirstCall && leading)) {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = undefined;
+            }
+            invokeFunc();
+        } else if (!timeout && trailing) {
+            timeout = setTimeout(() => {
+                invokeFunc();
+                timeout = undefined;
+            }, remaining);
+        }
+    };
+};

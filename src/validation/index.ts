@@ -18,6 +18,28 @@ export const parseLanguageCode = (
 };
 
 /**
+ * Parse boolean value from various formats
+ * Handles: boolean, number (0/1), string ('0'/'1'/'true'/'false'), null/undefined
+ *
+ * @param value - Value to parse as boolean
+ * @returns True, false, or original value if not parseable
+ *
+ * @example
+ * parseBool(1) // true
+ * parseBool('1') // true
+ * parseBool(0) // false
+ * parseBool('false') // false
+ * parseBool(true) // true
+ */
+export const parseBool = (value: any): boolean => {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'boolean') return value;
+    if (value === 1 || value === '1' || value === 'true') return true;
+    if (value === 0 || value === '0' || value === 'false') return false;
+    return Boolean(value);
+};
+
+/**
  * Validates CSS property and value
  */
 export const isValidCss = (prop: string, val: string): boolean => {

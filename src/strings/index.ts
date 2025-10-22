@@ -363,4 +363,40 @@ export const trimStr = (
     return result;
 };
 
+/**
+ * Converts snake_case to camelCase
+ * @param str - Snake case string to convert
+ * @returns Camel case string
+ *
+ * @example
+ * snakeToCamelCase('hello_world') // 'helloWorld'
+ * snakeToCamelCase('user_first_name') // 'userFirstName'
+ */
+export const snakeToCamelCase = (str: string): string => {
+    return str.replace(/_([a-z])/g, (_match, letter) => letter.toUpperCase());
+};
+
+/**
+ * Converts string to human-readable format
+ * Handles camelCase, snake_case, PascalCase
+ * @param str - String to humanize
+ * @returns Human-readable string
+ *
+ * @example
+ * humanize('firstName') // 'First Name'
+ * humanize('user_email') // 'User Email'
+ * humanize('CompanyName') // 'Company Name'
+ */
+export const humanize = (str: string): string => {
+    if (!str || typeof str !== 'string') return str;
+
+    return str
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/_/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+        .replace(/\b\w/g, (match) => match.toUpperCase());
+};
+
 

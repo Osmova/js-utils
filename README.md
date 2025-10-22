@@ -11,6 +11,27 @@ Lightweight TS/JS utility lib with common helper functions.
 
 ## API Reference
 
+### Numbers
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `formatCurrency(value, currency?, locale?)` | Formats number as currency with locale support | `formatCurrency(1234.56)` → `"1 234,56 €"` |
+| `formatNumber(value, options?)` | Formats number with locale-specific separators | `formatNumber(1234.56, {decimals: 2})` → `"1 234,56"` |
+| `formatPercent(value, options?)` | Formats number as percentage | `formatPercent(0.1556)` → `"15,56 %"` |
+| `clamp(value, min, max)` | Clamps number between min and max values | `clamp(150, 0, 100)` → `100` |
+| `randomInt(min, max)` | Generates random integer between min and max (inclusive) | `randomInt(1, 10)` → `7` |
+
+### Arrays
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `chunk(array, size)` | Splits array into chunks of specified size | `chunk([1,2,3,4,5], 2)` → `[[1,2], [3,4], [5]]` |
+| `uniq(array)` | Removes duplicate values from array | `uniq([1,2,2,3])` → `[1,2,3]` |
+| `unique(array)` | Alias for uniq | `unique([1,2,2,3])` → `[1,2,3]` |
+| `compact(array)` | Removes falsy values from array | `compact([0,1,false,2,'',3])` → `[1,2,3]` |
+| `sortBy(array, iteratee, order?)` | Sorts array by property or function | `sortBy([{age:30},{age:20}], 'age')` → `[{age:20},{age:30}]` |
+| `range(start, end?, step?)` | Creates array of numbers from start to end | `range(5)` → `[0,1,2,3,4]` |
+
 ### Strings
 
 | Function | Description | Example |
@@ -18,6 +39,8 @@ Lightweight TS/JS utility lib with common helper functions.
 | `capitalize(str)` | Capitalizes first letter | `capitalize('hello')` → `"Hello"` |
 | `camelize(str, options?)` | Converts to camelCase | `camelize('hello-world')` → `"helloWorld"` |
 | `camelToSnakeCase(str)` | Converts camelCase to snake_case | `camelToSnakeCase('helloWorld')` → `"hello_world"` |
+| `snakeToCamelCase(str)` | Converts snake_case to camelCase | `snakeToCamelCase('hello_world')` → `"helloWorld"` |
+| `humanize(str)` | Converts string to human-readable format | `humanize('firstName')` → `"First Name"` |
 | `slugify(str)` | Creates URL-friendly slug | `slugify('Hello World!')` → `"hello_world"` |
 | `basename(path, sep?)` | Gets filename from path | `basename('/path/to/file.txt')` → `"file.txt"` |
 | `stripExtension(str)` | Removes file extension | `stripExtension('file.txt')` → `"file"` |
@@ -54,6 +77,8 @@ Lightweight TS/JS utility lib with common helper functions.
 | `getByPath(obj, path, defaultValue?)` | Gets value by dot notation path | `getByPath({a: {b: 1}}, 'a.b')` → `1` |
 | `isset(target, options?)` | Checks if value is set (not null/undefined) | `isset({a: 1})` → `true` |
 | `toFormData(input, options?)` | Converts input to FormData | `toFormData({name: 'John'})` → `FormData` |
+| `pick(obj, keys)` | Creates new object with only specified keys | `pick({a:1,b:2,c:3}, ['a','c'])` → `{a:1,c:3}` |
+| `omit(obj, keys)` | Creates new object excluding specified keys | `omit({a:1,b:2,c:3}, ['b'])` → `{a:1,c:3}` |
 
 ### Dates
 
@@ -76,6 +101,7 @@ Lightweight TS/JS utility lib with common helper functions.
 | Function | Description | Example |
 |----------|-------------|---------|
 | `debounce(func, delay, options?)` | Debounces function execution with optional immediate mode | `debounce(() => console.log('hi'), 300)` |
+| `throttle(func, delay, options?)` | Throttles function execution to limit frequency | `throttle(() => console.log('scroll'), 1000)` |
 | `loadExternalScript(src, opts?)` | Dynamically loads external scripts (browser only) | `await loadExternalScript('https://cdn.example.com/lib.js')` |
 | `genUuid(options?)` | Generates UUID with version support (v1 or v4) | `genUuid({version: 4})` → `"550e8400-e29b-41d4-a716-446655440000"` |
 
@@ -84,6 +110,7 @@ Lightweight TS/JS utility lib with common helper functions.
 | Function | Description | Example |
 |----------|-------------|---------|
 | `parseLanguageCode(code, options?)` | Extracts language code from locale | `parseLanguageCode('en-US')` → `'en'` |
+| `parseBool(value)` | Parses boolean from various formats | `parseBool('1')` → `true`, `parseBool(0)` → `false` |
 | `isValidCss(prop, val)` | Validates CSS property and value | `isValidCss('color', '#ff0000')` → `true` |
 | `isValidHex(color)` | Validates hex color format | `isValidHex('#ff0000')` → `true` |
 | `isValidColor(color)` | Validates color format (hex, named, rgb, hsl) | `isValidColor('red')` → `true` |

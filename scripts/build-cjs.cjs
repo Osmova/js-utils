@@ -27,6 +27,7 @@ function copyFiles(src, dest) {
       });
 
       content = content.replace(/require\(['"]\.\.?\/([^'"\/]+)['"]\)/g, (match, p1) => {
+        if (p1.endsWith('.cjs') || p1.endsWith('.js')) return match;
         const prefix = match.includes('../') ? '../' : './';
         try {
           const potentialDir = path.join(path.dirname(srcPath), p1);

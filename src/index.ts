@@ -2,6 +2,12 @@
 // String utilities
 export * from './strings/index.js';
 
+// Number utilities
+export * from './numbers/index.js';
+
+// Array utilities
+export * from './arrays/index.js';
+
 // Object utilities
 export * from './objects/index.js';
 

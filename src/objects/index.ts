@@ -632,4 +632,50 @@ export const toFormData = (
     return formData;
 };
 
+/**
+ * Create new object with only specified keys
+ * @param obj - Source object
+ * @param keys - Keys to pick from object
+ * @returns New object with only specified keys
+ *
+ * @example
+ * pick({ a: 1, b: 2, c: 3 }, ['a', 'c']) // { a: 1, c: 3 }
+ * pick({ name: 'John', age: 30, email: 'john@example.com' }, ['name', 'email'])
+ * // { name: 'John', email: 'john@example.com' }
+ */
+export const pick = <T extends Record<string, any>, K extends keyof T>(
+    obj: T,
+    keys: K[]
+): Pick<T, K> => {
+    const result = {} as Pick<T, K>;
+    for (const key of keys) {
+        if (key in obj) {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+};
+
+/**
+ * Create new object excluding specified keys
+ * @param obj - Source object
+ * @param keys - Keys to omit from object
+ * @returns New object without specified keys
+ *
+ * @example
+ * omit({ a: 1, b: 2, c: 3 }, ['b']) // { a: 1, c: 3 }
+ * omit({ name: 'John', age: 30, password: 'secret' }, ['password'])
+ * // { name: 'John', age: 30 }
+ */
+export const omit = <T extends Record<string, any>, K extends keyof T>(
+    obj: T,
+    keys: K[]
+): Omit<T, K> => {
+    const result = { ...obj };
+    for (const key of keys) {
+        delete result[key];
+    }
+    return result as Omit<T, K>;
+};
+
 export { equal } from './equal.js';
