@@ -72,7 +72,10 @@ Lightweight TS/JS utility lib with common helper functions.
 | `objectToFormData(obj, params?)` | Converts object to FormData | `objectToFormData({name: 'John'})` → `FormData` |
 | `diff(obj1, obj2, opts?)` | Compares two objects | `diff({a: 1}, {a: 2})` → `{a: {from: 1, to: 2}}` |
 | `clone(obj, options?)` | Shallow/deep clone object | `clone({a: {b: 1}})` → `{a: {b: 1}}` |
+| `containsFiles(input)` | Checks if input contains File/Blob instances | `containsFiles({avatar: new File(...)})` → `true` |
 | `deepClone(obj)` | Deep clone object | `deepClone({a: {b: 1}})` → `{a: {b: 1}}` |
+| `deepFind(input, predicate)` | Recursively finds first matching value | `deepFind({a: {b: 1}}, v => v === 1)` → `1` |
+| `deepSome(input, predicate)` | Recursively checks if any value matches | `deepSome([1, [2, [3]]], v => v === 3)` → `true` |
 | `flattenObject(obj, prefix?, result?, options?)` | Flattens nested object | `flattenObject({a: {b: 1}})` → `{'a.b': 1}` |
 | `getByPath(obj, path, defaultValue?)` | Gets value by dot notation path | `getByPath({a: {b: 1}}, 'a.b')` → `1` |
 | `isset(target, options?)` | Checks if value is set (not null/undefined) | `isset({a: 1})` → `true` |

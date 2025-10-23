@@ -678,4 +678,88 @@ export const omit = <T extends Record<string, any>, K extends keyof T>(
     return result as Omit<T, K>;
 };
 
+/**
+ * Recursively check if any value in nested structure matches predicate
+ * Like Array.some() but works on nested objects/arrays
+ *
+ * @param input - Value to traverse (object, array, or primitive)
+ * @param predicate - Function that returns true for matching values
+ * @returns true if any value matches predicate
+ *
+ * @example
+ * deepSome({ a: { b: 1 } }, v => v === 1) // true
+ * deepSome([1, [2, [3]]], v => v === 3) // true
+ * deepSome({ files: [new File(...)] }, v => v instanceof File) // true
+ */
+export const deepSome = (
+    input: any,
+    predicate: (value: any) => boolean
+): boolean => {
+    if (predicate(input)) return true;
+    if (!input || typeof input !== 'object') return false;
+
+    if (Array.isArray(input)) {
+        return input.some(item => deepSome(item, predicate));
+    }
+
+    for (const value of Object.values(input)) {
+        if (deepSome(value, predicate)) return true;
+    }
+
+    return false;
+};
+
+/**
+ * Recursively find first value in nested structure that matches predicate
+ * Like Array.find() but works on nested objects/arrays
+ *
+ * @param input - Value to traverse (object, array, or primitive)
+ * @param predicate - Function that returns true for target value
+ * @returns First matching value or undefined
+ *
+ * @example
+ * deepFind({ a: { b: 1 } }, v => v === 1) // 1
+ * deepFind([1, [2, [3]]], v => v === 3) // 3
+ * deepFind({ user: { name: 'John' } }, v => typeof v === 'string') // 'John'
+ */
+export const deepFind = (
+    input: any,
+    predicate: (value: any) => boolean
+): any => {
+    if (predicate(input)) return input;
+    if (!input || typeof input !== 'object') return undefined;
+
+    if (Array.isArray(input)) {
+        for (const item of input) {
+            const found = deepFind(item, predicate);
+            if (found !== undefined) return found;
+        }
+        return undefined;
+    }
+
+    for (const value of Object.values(input)) {
+        const found = deepFind(value, predicate);
+        if (found !== undefined) return found;
+    }
+
+    return undefined;
+};
+
+/**
+ * Check if input contains File or Blob instances anywhere in nested structure
+ * Useful for determining if data needs multipart/form-data encoding
+ *
+ * @param input - Value to check (object, array, or primitive)
+ * @returns true if any File or Blob instance found
+ *
+ * @example
+ * containsFiles({ avatar: new File([''], 'avatar.jpg') }) // true
+ * containsFiles({ images: [new Blob(['test'])] }) // true
+ * containsFiles({ data: { nested: { file: new File([''], 'doc.pdf') } } }) // true
+ * containsFiles({ name: 'test' }) // false
+ */
+export const containsFiles = (input: any): boolean => {
+    return deepSome(input, (value) => value instanceof File || value instanceof Blob);
+};
+
 export { equal } from './equal.js';

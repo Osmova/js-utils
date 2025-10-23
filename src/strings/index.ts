@@ -66,23 +66,56 @@ export const stripExtension = (str: string): string => {
  */
 export const isFilePath = (str: string, options: { strict?: boolean } = {}): boolean => {
     if (!str || typeof str !== 'string') return false;
-    
+
     const { strict = false } = options;
 
-    // Basic path patterns
+    // Check for path separators (POSIX / or Windows \)
     const hasPathSeparators = str.includes('/') || str.includes('\\');
-    
+
+    // Check for relative path indicators
+    const isRelativePath = str.startsWith('./') || str.startsWith('../');
+
+    // Check for absolute paths
+    const isAbsolutePath = str.startsWith('/') || /^[a-zA-Z]:/.test(str);
+
     if (strict) {
+        // Strict mode: MUST have path separators AND file extension
         const hasExtension = /\.[a-zA-Z0-9]{1,10}$/.test(str);
         return hasPathSeparators && hasExtension;
     }
 
+    // Non-strict mode: Check for path context FIRST
+    // If has path separators, relative/absolute indicators → likely a file path
+    if (hasPathSeparators || isRelativePath || isAbsolutePath) {
+        return true;
+    }
+
+    // WITHOUT path separators, check if it's a simple filename (not a domain)
+    // "file.jpg" = likely file (2 parts: name + extension)
+    // "sub.domain.com" or "lol.fr" = likely domain (looks like FQDN)
     const hasExtension = /\.[a-zA-Z0-9]{1,10}$/.test(str);
-    return hasPathSeparators ||
-        hasExtension ||
-        str.startsWith('./') ||
-        str.startsWith('../') ||
-        str.startsWith('/');
+    if (hasExtension) {
+        const parts = str.split('.');
+        // Simple filename: exactly 2 parts (name.ext)
+        // Domain: 2+ parts that look like domain structure
+        // "file.txt" = 2 parts, no subdomain-like pattern = file
+        // "lol.fr" = 2 parts, domain TLD = NOT file
+        // "example.com" = 2 parts, domain TLD = NOT file
+
+        // Common domain TLDs to exclude
+        const commonTLDs = ['com', 'org', 'net', 'edu', 'gov', 'io', 'fr', 'uk', 'de', 'jp', 'cn', 'au', 'ca', 'co', 'in', 'ru', 'br', 'it', 'es', 'nl', 'se', 'ch', 'pl', 'be', 'at', 'dk', 'fi', 'no', 'nz', 'ie', 'sg', 'my', 'th', 'vn', 'ph', 'id', 'kr', 'tw', 'hk', 'mx', 'ar', 'cl', 'pe', 'za'];
+        const lastPart = parts[parts.length - 1].toLowerCase();
+
+        // If last part is a common TLD → likely domain, NOT file
+        if (commonTLDs.includes(lastPart)) {
+            return false;
+        }
+
+        // Otherwise, if exactly 2 parts → likely a file
+        return parts.length === 2;
+    }
+
+    return false;
 };
 
 /**
