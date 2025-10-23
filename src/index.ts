@@ -23,5 +23,8 @@ export * from './validation/index.js';
 // Color utilities
 export * from './colors/index.js';
 
+// Browser utilities
+export * from './browser/index.js';
+
 // Misc utilities
 export * from './functions/index.js';

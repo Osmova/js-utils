@@ -99,6 +99,16 @@ Lightweight TS/JS utility lib with common helper functions.
 | `promiseAllLimit(promises, limit)` | Execute promises with concurrency limit | `await promiseAllLimit([p1, p2, p3], 2)` |
 | `withTimeout(promise, timeoutMs, timeoutMessage?)` | Adds timeout to promise | `await withTimeout(fetch('/api'), 5000)` |
 
+### Browser
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `downloadBlob(blob, filename, options?)` | Downloads a Blob as a file in browser | `downloadBlob(csvBlob, 'data.csv')` |
+| `downloadUrl(url, filename?, options?)` | Downloads a file from URL | `downloadUrl('https://example.com/file.pdf', 'doc.pdf')` |
+| `openBlob(blob, options?)` | Opens Blob in new browser tab | `openBlob(pdfBlob)` |
+| `handleBlobDownload(blob, filename, options?)` | Download or open Blob based on options | `handleBlobDownload(blob, 'file.pdf', {download: true})` |
+| `dataUrlToBlob(dataUrl)` | Converts data URL to Blob | `dataUrlToBlob('data:text/plain;base64,...')` |
+
 ### Functions
 
 | Function | Description | Example |
