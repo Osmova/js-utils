@@ -28,3 +28,6 @@ export * from './browser/index.js';
 
 // Misc utilities
 export * from './functions/index.js';
+
+// Random utilities
+export * from './random/index.js';
