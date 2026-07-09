@@ -5,9 +5,26 @@ Lightweight TS/JS utility lib with common helper functions.
 
 ## Installation
 
-`npm install js-utils`
+```bash
+pnpm add @osmova/js-utils
 # or
-`yarn add js-utils`
+npm install @osmova/js-utils
+```
+
+## Usage & tree-shaking
+
+The package ships ESM + CJS, has zero runtime dependencies and declares `"sideEffects": false`, so bundlers only keep what you import:
+
+```ts
+import { debounce, slugify } from '@osmova/js-utils';
+```
+
+Every category is also exposed as a subpath for narrower imports:
+
+```ts
+import { pick, omit } from '@osmova/js-utils/objects';
+import { promiseAllLimit } from '@osmova/js-utils/async';
+```
 
 ## API Reference
 
@@ -31,6 +48,8 @@ Lightweight TS/JS utility lib with common helper functions.
 | `compact(array)` | Removes falsy values from array | `compact([0,1,false,2,'',3])` → `[1,2,3]` |
 | `sortBy(array, iteratee, order?)` | Sorts array by property or function | `sortBy([{age:30},{age:20}], 'age')` → `[{age:20},{age:30}]` |
 | `range(start, end?, step?)` | Creates array of numbers from start to end | `range(5)` → `[0,1,2,3,4]` |
+| `intersection(array, other)` | Values present in both arrays | `intersection([1,2,3], [2,3,4])` → `[2,3]` |
+| `difference(array, other)` | Values of first array missing from second | `difference([1,2,3], [2,3,4])` → `[1]` |
 
 ### Strings
 
@@ -49,9 +68,16 @@ Lightweight TS/JS utility lib with common helper functions.
 | `getStringBetween(str, start, end)` | Extracts string between delimiters | `getStringBetween('a[b]c', '[', ']')` → `"b"` |
 | `truncate(str, length, options?)` | Truncates string to specified length | `truncate('Hello World', 5)` → `"Hello..."` |
 | `isEmail(str)` | Validates email format | `isEmail('test@example.com')` → `true` |
-| `rgb2hex(rgb)` | Converts RGB to hex color | `rgb2hex('rgb(255, 0, 0)')` → `"#ff0000"` |
-| `composeURL(...parts)` | Joins URL parts | `composeURL('api', 'users', '1')` → `"api/users/1"` |
-| `generatePassword(opts?)` | Generates secure password | `generatePassword({length: 16})` → `"aB3$kL9..."` |
+| `isFilePath(str, options?)` | Heuristic check whether a string looks like a file path | `isFilePath('./src/index.ts')` → `true` |
+| `stripHtml(html)` | Strips HTML tags to plain text | `stripHtml('<b>Hi</b>')` → `"Hi"` |
+| `trimStr(str, char?, options?)` | Trims a specific character from start/end | `trimStr('--a--', '-')` → `"a"` |
+| `escapeRegExp(str)` | Escapes regex metacharacters | `escapeRegExp('1.5+2')` → `"1\\.5\\+2"` |
+| `escapeHtml(str)` | Escapes HTML special characters | `escapeHtml('<b>')` → `"&lt;b&gt;"` |
+| `parseStringValue(value, options?)` | Parses a string to bool/number/JSON when possible | `parseStringValue('42')` → `42` |
+| `composePath(...parts)` | Joins path segments | `composePath('api', 'users', '1')` → `"api/users/1"` |
+| `rgb2hex(rgb)` | ⚠️ Deprecated — use colors `parseRgb` + `rgbToHex` | `rgb2hex('rgb(255, 0, 0)')` → `"#ff0000"` |
+| `composeURL(...parts)` | ⚠️ Deprecated — use `composePath` | `composeURL('api', 'users', '1')` → `"api/users/1"` |
+| `generatePassword(opts?)` | Generates secure password (crypto, unbiased) | `generatePassword({length: 16})` → `"aB3$kL9..."` |
 
 ### Objects
 
@@ -91,6 +117,10 @@ Lightweight TS/JS utility lib with common helper functions.
 |----------|-------------|---------|
 | `parseDate(input)` | Parses various date formats | `parseDate('2023-01-01')` → `Date` |
 | `parsePeriod(period)` | Parses period strings | `parsePeriod('2023-01')` → `{start: Date, end: Date}` |
+| `addDays(date, days)` | Returns new date shifted by N days | `addDays(new Date('2026-01-01'), 7)` → `Date` |
+| `isSameDay(a, b)` | Checks if two dates share a calendar day | `isSameDay(d1, d2)` → `true` |
+| `startOfDay(date, options?)` | New date at 00:00:00.000 (local or UTC) | `startOfDay(new Date())` → `Date` |
+| `endOfDay(date, options?)` | New date at 23:59:59.999 (local or UTC) | `endOfDay(new Date())` → `Date` |
 
 ### Async
 
@@ -98,7 +128,7 @@ Lightweight TS/JS utility lib with common helper functions.
 |----------|-------------|---------|
 | `sleep(ms)` | Promise-based delay | `await sleep(1000)` |
 | `retry(fn, maxAttempts?, baseDelay?)` | Retries function with exponential backoff | `await retry(() => fetch('/api'), 3, 1000)` |
-| `promiseAllLimit(promises, limit)` | Execute promises with concurrency limit | `await promiseAllLimit([p1, p2, p3], 2)` |
+| `promiseAllLimit(tasks, limit)` | Execute tasks with a concurrency limit (pass factories so tasks start lazily) | `await promiseAllLimit([() => fetch(a), () => fetch(b)], 2)` |
 | `withTimeout(promise, timeoutMs, timeoutMessage?)` | Adds timeout to promise | `await withTimeout(fetch('/api'), 5000)` |
 
 ### Browser
@@ -119,6 +149,31 @@ Lightweight TS/JS utility lib with common helper functions.
 | `throttle(func, delay, options?)` | Throttles function execution to limit frequency | `throttle(() => console.log('scroll'), 1000)` |
 | `loadExternalScript(src, opts?)` | Dynamically loads external scripts (browser only) | `await loadExternalScript('https://cdn.example.com/lib.js')` |
 | `genUuid(options?)` | Generates UUID with version support (v1 or v4) | `genUuid({version: 4})` → `"550e8400-e29b-41d4-a716-446655440000"` |
+| `once(func)` | Wraps a function so it only ever runs once | `const init = once(setup)` |
+| `memoize(func, resolver?)` | Caches results per argument list | `const fast = memoize(slowFn)` |
+
+### Colors
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `lightenColor(hex, percent)` | Lightens a hex color | `lightenColor('#207dd3', 20)` → `"#53B0FF"` |
+| `darkenColor(hex, percent)` | Darkens a hex color | `darkenColor('#207dd3', 20)` → `"#004AA0"` |
+| `hexToRgb(hex)` | Hex to RGB object | `hexToRgb('#FF0000')` → `{r:255,g:0,b:0}` |
+| `rgbToHex(r, g, b)` | RGB channels to hex string | `rgbToHex(255, 0, 0)` → `"#FF0000"` |
+| `hexToRgbString(hex)` | Hex to `rgb(...)` string | `hexToRgbString('#FF0000')` → `"rgb(255, 0, 0)"` |
+| `parseRgb(rgb)` | Parses `rgb()/rgba()` strings | `parseRgb('rgb(255,0,0)')` → `{r:255,g:0,b:0}` |
+| `getLuminance(hex)` | WCAG relative luminance (0-1) | `getLuminance('#FFFFFF')` → `1` |
+| `isLightColor(hex, threshold?)` | Light/dark check | `isLightColor('#FFFFFF')` → `true` |
+| `getContrastText(hex)` | Black or white text for a background | `getContrastText('#000000')` → `"#FFFFFF"` |
+
+### Random
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `shuffleArray(array)` | Fisher-Yates shuffle (returns new array) | `shuffleArray([1,2,3])` → `[3,1,2]` |
+| `generateSeed()` | Timestamp-based unique seed string | `generateSeed()` → `"1780..."` |
+| `pickOne(array)` | Random single element | `pickOne([1,2,3])` → `2` |
+| `pickRandom(array, count)` | N random unique elements | `pickRandom([1,2,3,4], 2)` → `[4,1]` |
 
 ### Validation
 
@@ -135,12 +190,15 @@ Lightweight TS/JS utility lib with common helper functions.
 Run tests using the following commands:
 
 ```bash
-# Run Node.js tests
-yarn test:node
+# Unit tests (jest)
+pnpm test
+
+# Run Node.js smoke tests
+pnpm test:node
 
 # Run browser tests (automated with Puppeteer)
-yarn test:browser
+pnpm test:browser
 
-# Run all tests
-yarn test:all
+# Run all smoke tests
+pnpm test:all
 ```
