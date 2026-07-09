@@ -763,3 +763,105 @@ export const containsFiles = (input: any): boolean => {
 };
 
 export { equal } from './equal.js';
+
+/**
+ * Options for toArray conversion
+ */
+export interface ToArrayOptions {
+    delimiter?: string | RegExp;
+    trim?: boolean;
+    filterEmpty?: boolean;
+    map?: <T, U>(item: T, index: number) => U;
+    strictNumericKeys?: boolean;
+    deep?: boolean;
+}
+
+/**
+ * Converts various inputs to arrays intelligently
+ * Handles: arrays, objects with numeric keys (localStorage), comma-separated strings, single values, null/undefined, Set/Map
+ */
+export const toArray = <T = any>(
+    input: any,
+    options: ToArrayOptions = {}
+): T[] => {
+    const {
+        delimiter = ',',
+        trim = true,
+        filterEmpty = true,
+        map,
+        strictNumericKeys = true,
+        deep = false
+    } = options;
+
+    if (input == null) return [];
+
+    if (Array.isArray(input)) {
+        let result = [...input];
+        if (deep) {
+            result = result.map(item =>
+                typeof item === 'object' && item !== null && !Array.isArray(item)
+                    ? toArray(item, options)
+                    : item
+            );
+        }
+        return map ? result.map((item, i) => map(item, i)) : result;
+    }
+
+    if (input instanceof Set) {
+        const result = [...input];
+        return map ? result.map((item, i) => map(item, i)) : result;
+    }
+
+    if (input instanceof Map) {
+        const result = [...input.entries()];
+        return map ? result.map((item, i) => map(item, i)) : result as T[];
+    }
+
+    if (typeof input === 'string') {
+        let parts = input.split(delimiter);
+        if (trim) parts = parts.map(s => s.trim());
+        if (filterEmpty) parts = parts.filter(s => s !== '');
+        return map ? parts.map((item, i) => map(item, i)) : parts as T[];
+    }
+
+    if (typeof input === 'object' && input !== null) {
+        const keys = Object.keys(input);
+        if (keys.length === 0) return [];
+
+        const isNumericKeys = keys.every(key => /^\d+$/.test(key));
+
+        if (isNumericKeys) {
+            const sortedKeys = keys.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+            let result = sortedKeys.map(key => input[key]);
+
+            if (deep) {
+                result = result.map(item =>
+                    typeof item === 'object' && item !== null && !Array.isArray(item)
+                        ? toArray(item, options)
+                        : item
+                );
+            }
+
+            return map ? result.map((item, i) => map(item, i)) : result;
+        }
+
+        if (!strictNumericKeys) {
+            const result = Object.values(input);
+            return map ? result.map((item, i) => map(item, i)) : result as T[];
+        }
+    }
+
+    return map ? [map(input, 0)] : [input];
+};
+
+/**
+ * Checks if a value is array-like (has numeric keys and can be converted to array)
+ */
+export const isArrayLike = (value: any): boolean => {
+    if (value == null) return false;
+    if (Array.isArray(value)) return true;
+    if (typeof value !== 'object') return false;
+
+    const keys = Object.keys(value);
+    return keys.length > 0 && keys.every(key => /^\d+$/.test(key));
+};

@@ -82,6 +82,8 @@ Lightweight TS/JS utility lib with common helper functions.
 | `toFormData(input, options?)` | Converts input to FormData | `toFormData({name: 'John'})` → `FormData` |
 | `pick(obj, keys)` | Creates new object with only specified keys | `pick({a:1,b:2,c:3}, ['a','c'])` → `{a:1,c:3}` |
 | `omit(obj, keys)` | Creates new object excluding specified keys | `omit({a:1,b:2,c:3}, ['b'])` → `{a:1,c:3}` |
+| `toArray(input, options?)` | Converts various inputs to arrays (objects with numeric keys, strings, Set, Map) | `toArray({"0":"a","1":"b"})` → `["a","b"]` |
+| `isArrayLike(value)` | Checks if value is array-like (array or object with numeric keys) | `isArrayLike({"0":"a"})` → `true` |
 
 ### Dates
 
