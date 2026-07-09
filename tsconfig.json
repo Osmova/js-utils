@@ -18,8 +18,7 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@types"],
-    "incremental": true
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": [
     "src/**/*"
