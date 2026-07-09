@@ -1,6 +1,33 @@
 import { isEmpty, isNumeric } from "../objects/index.js";
 
 /**
+ * Escapes special regex characters in a string so it can be used
+ * literally inside a RegExp
+ *
+ * @example
+ * escapeRegExp('1.5+2') // '1\\.5\\+2'
+ * new RegExp(escapeRegExp(userInput))
+ */
+export const escapeRegExp = (str: string): string => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
+ * Escapes HTML special characters for safe interpolation into markup
+ *
+ * @example
+ * escapeHtml('<b>"a" & \'b\'</b>') // '&lt;b&gt;&quot;a&quot; &amp; &#39;b&#39;&lt;/b&gt;'
+ */
+export const escapeHtml = (str: string): string => {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+/**
  * Capitalizes the first letter of a string
  */
 export const capitalize = (str: string): string => {
@@ -175,6 +202,9 @@ export const truncate = (
     const { ending = '...', strict = false } = options;
 
     if (string.length > length) {
+        if (length <= ending.length) {
+            return ending.slice(0, length);
+        }
         const truncatedText = string.substring(0, length - ending.length);
 
         if (strict) {
@@ -197,11 +227,11 @@ export const truncate = (
 export const stripHtml = (html: string | null | undefined): string => {
     if (!html) return '';
 
-    // Browser env - use DOM methods
-    if (typeof document !== 'undefined') {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        return tmp.textContent || tmp.innerText || '';
+    // Browser env - DOMParser parses without attaching to the document,
+    // so embedded scripts/event handlers (e.g. <img onerror>) never run
+    if (typeof DOMParser !== 'undefined') {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || '';
     }
 
     // Node.js env - use regex fallback
@@ -257,6 +287,7 @@ export const isEmail = (str: string): boolean => {
 
 /**
  * Converts RGB to hex
+ * @deprecated Use parseRgb + rgbToHex from the colors module instead
  */
 export const rgb2hex = (rgb: string): string => {
     const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
@@ -300,9 +331,13 @@ export const generatePassword = (options: {
         charset += symbolChars;
     }
 
+    // Rejection sampling avoids the modulo bias of `byte % chars.length`
     const getRandomChar = (chars: string): string => {
+        const max = 256 - (256 % chars.length);
         const array = new Uint8Array(1);
-        crypto.getRandomValues(array);
+        do {
+            crypto.getRandomValues(array);
+        } while (array[0] >= max);
         return chars[array[0] % chars.length];
     };
 
@@ -320,11 +355,20 @@ export const generatePassword = (options: {
         password += getRandomChar(charset);
     }
 
-    return password.split('').sort(() => {
+    // Unbiased crypto Fisher-Yates shuffle (Array.sort with a random
+    // comparator produces a skewed permutation)
+    const result = password.split('');
+    for (let i = result.length - 1; i > 0; i--) {
+        const range = i + 1;
+        const max = 256 - (256 % range);
         const array = new Uint8Array(1);
-        crypto.getRandomValues(array);
-        return (array[0] % 3) - 1;
-    }).join('');
+        do {
+            crypto.getRandomValues(array);
+        } while (array[0] >= max);
+        const j = array[0] % range;
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result.join('');
 };
 
 /**
@@ -360,8 +404,7 @@ export const parseStringValue = (
         (value.startsWith('[') && value.endsWith(']')))) {
         try {
             return JSON.parse(value);
-        } catch (error) {
-            console.warn(`Failed to parse string value as JSON:`, error);
+        } catch {
             return value;
         }
     }
@@ -381,15 +424,16 @@ export const trimStr = (
     if (!char || typeof char !== 'string') return str;
 
     const { start = true, end = true } = options;
+    const escaped = escapeRegExp(char);
     let result = str;
 
     if (start) {
-        const startRegex = new RegExp(`^\\${char}+`);
+        const startRegex = new RegExp(`^(?:${escaped})+`);
         result = result.replace(startRegex, '');
     }
 
     if (end) {
-        const endRegex = new RegExp(`\\${char}+$`);
+        const endRegex = new RegExp(`(?:${escaped})+$`);
         result = result.replace(endRegex, '');
     }
 

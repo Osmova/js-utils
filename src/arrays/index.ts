@@ -115,3 +115,23 @@ export const range = (start: number, end?: number, step: number = 1): number[] =
 
     return result;
 };
+
+/**
+ * Values present in both arrays
+ * @example
+ * intersection([1, 2, 3], [2, 3, 4]) // [2, 3]
+ */
+export const intersection = <T>(array: T[], other: T[]): T[] => {
+    const set = new Set(other);
+    return array.filter(item => set.has(item));
+};
+
+/**
+ * Values of the first array not present in the second
+ * @example
+ * difference([1, 2, 3], [2, 3, 4]) // [1]
+ */
+export const difference = <T>(array: T[], other: T[]): T[] => {
+    const set = new Set(other);
+    return array.filter(item => !set.has(item));
+};
