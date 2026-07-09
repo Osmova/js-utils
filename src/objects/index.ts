@@ -60,13 +60,14 @@ export const softMerge = (
 
 /**
  * Deep merge multiple objects
+ * Returns a new object; none of the inputs are mutated
  */
 export const deepMerge = (...objects: Record<string, any>[]): Record<string, any> => {
     if (objects.length < 2) {
         throw new Error('deepMerge: this function expects at least 2 objects to be provided');
     }
 
-    let result = objects[0];
+    const result: Record<string, any> = { ...objects[0] };
 
     for (let i = 1; i < objects.length; i++) {
         const obj = objects[i];
@@ -76,7 +77,7 @@ export const deepMerge = (...objects: Record<string, any>[]): Record<string, any
             const currentValue = obj[key];
 
             if (Array.isArray(prevValue) && Array.isArray(currentValue)) {
-                result[key] = prevValue.concat(...currentValue);
+                result[key] = prevValue.concat(currentValue);
             } else if (isObject(prevValue) && isObject(currentValue)) {
                 result[key] = deepMerge(prevValue, currentValue);
             } else {
@@ -133,6 +134,7 @@ export const keyByValue = <T>(object: Record<string, T>, value: T): string | und
 
 /**
  * Remove item from array once
+ * Note: mutates the input array in place and returns it
  */
 export const removeItemOnce = <T>(array: T[], value: T): T[] => {
     const index = array.indexOf(value);
@@ -228,10 +230,10 @@ export const objectToFormData = (
         ignoreNullUndefined = true
     } = params;
 
-    for (let property in obj) {
+    for (const property in obj) {
         if (obj.hasOwnProperty(property) && !ignoreFields.includes(property)) {
-            let field = namespace ? `${namespace}[${property}]` : property;
-            let data = obj[property];
+            const field = namespace ? `${namespace}[${property}]` : property;
+            const data = obj[property];
 
             if (data == null) {
                 if (!ignoreNullUndefined) {
@@ -268,6 +270,10 @@ export const diff = (
             if (!obj1.hasOwnProperty(key)) {
                 result[key] = obj2[key];
             } else if (typeof obj2[key] === 'object' && obj2[key] !== null) {
+                if (typeof obj1[key] !== 'object' || obj1[key] === null) {
+                    result[key] = obj2[key];
+                    continue;
+                }
                 const nestedDiff = diff(obj1[key], obj2[key], { deep: true });
                 if (Object.keys(nestedDiff).length > 0) {
                     result[key] = nestedDiff;
@@ -362,9 +368,6 @@ export const clone = (obj: any, options: { deep?: boolean } = {}): any => {
     // Handle WeakMap and WeakSet
     if (obj instanceof WeakMap) return new WeakMap();
     if (obj instanceof WeakSet) return new WeakSet();
-
-    // Handle functions
-    if (typeof obj === 'function') return obj;
 
     // Handle arrays
     if (Array.isArray(obj)) {
@@ -771,7 +774,7 @@ export interface ToArrayOptions {
     delimiter?: string | RegExp;
     trim?: boolean;
     filterEmpty?: boolean;
-    map?: <T, U>(item: T, index: number) => U;
+    map?: (item: any, index: number) => any;
     strictNumericKeys?: boolean;
     deep?: boolean;
 }
@@ -779,6 +782,8 @@ export interface ToArrayOptions {
 /**
  * Converts various inputs to arrays intelligently
  * Handles: arrays, objects with numeric keys (localStorage), comma-separated strings, single values, null/undefined, Set/Map
+ * Note: with `deep: true`, nested plain objects without numeric keys get wrapped
+ * in a single-element array (`{x: {a: 1}}` items become `[{a: 1}]`)
  */
 export const toArray = <T = any>(
     input: any,

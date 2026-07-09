@@ -20,9 +20,10 @@ export const parseLanguageCode = (
 /**
  * Parse boolean value from various formats
  * Handles: boolean, number (0/1), string ('0'/'1'/'true'/'false'), null/undefined
+ * Any other value is coerced with Boolean(value)
  *
  * @param value - Value to parse as boolean
- * @returns True, false, or original value if not parseable
+ * @returns Parsed boolean
  *
  * @example
  * parseBool(1) // true
@@ -54,10 +55,13 @@ export const isValidCss = (prop: string, val: string): boolean => {
         try {
             const testElement = document.createElement('div');
             const style = testElement.style as any;
+            // CSSStyleDeclaration exposes camelCase properties, so kebab-case
+            // input (background-color) must be converted first
+            const camelProp = prop.replace(/-([a-z])/g, (_m, c) => c.toUpperCase());
 
-            if (style[prop] !== '') return false;
-            style[prop] = val;
-            return style[prop] !== '';
+            if (style[camelProp] !== '') return false;
+            style[camelProp] = val;
+            return style[camelProp] !== '';
         } catch (error) {
             console.warn('CSS validation failed:', error);
             return false;

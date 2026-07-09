@@ -38,29 +38,39 @@ export async function retry<T>(
 }
 
 /**
- * Execute promises with concurrency limit
+ * Execute tasks with a concurrency limit
+ *
+ * Pass factories (`() => Promise`) so tasks start lazily and the limit is
+ * actually enforced. Plain promises are also accepted for backward
+ * compatibility, but those are already running when passed in, so they
+ * cannot be throttled.
  */
 export async function promiseAllLimit<T>(
-    promises: Promise<T>[],
+    tasks: Array<Promise<T> | (() => Promise<T>)>,
     limit: number
 ): Promise<T[]> {
-    const results: T[] = [];
-    const executing: Promise<void>[] = [];
+    const results: T[] = new Array(tasks.length);
+    const all: Promise<void>[] = [];
+    const executing = new Set<Promise<void>>();
 
-    for (const [index, promise] of promises.entries()) {
-        const execute = promise.then(result => {
-            results[index] = result;
-        });
+    for (const [index, task] of tasks.entries()) {
+        const execute = Promise.resolve(typeof task === 'function' ? task() : task)
+            .then(result => {
+                results[index] = result;
+            })
+            .finally(() => {
+                executing.delete(execute);
+            });
 
-        executing.push(execute);
+        all.push(execute);
+        executing.add(execute);
 
-        if (executing.length >= limit) {
+        if (executing.size >= limit) {
             await Promise.race(executing);
-            executing.splice(executing.findIndex(p => p === execute), 1);
         }
     }
 
-    await Promise.all(executing);
+    await Promise.all(all);
     return results;
 }
 
@@ -72,9 +82,11 @@ export function withTimeout<T>(
     timeoutMs: number,
     timeoutMessage = 'Operation timed out'
 ): Promise<T> {
-    const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
-    );
+    let timer: ReturnType<typeof setTimeout>;
 
-    return Promise.race([promise, timeout]);
+    const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    });
+
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

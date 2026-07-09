@@ -1,5 +1,10 @@
 /**
  * Deep equality check
+ *
+ * `fastJSON` compares plain objects via JSON.stringify: faster on large
+ * JSON-safe structures, but key order becomes significant
+ * ({a:1,b:2} !== {b:2,a:1}) and non-JSON values (undefined, functions,
+ * NaN) are not compared reliably.
  */
 interface EqualOptions {
     strict?: boolean;

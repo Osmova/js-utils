@@ -6,6 +6,7 @@ import { isValidHex } from '../validation/index.js';
 
 /**
  * Normalizes hex color to 6-digit format with # prefix
+ * The alpha channel of 8-digit hex colors is dropped
  * @param hex - The hex color string
  * @returns Normalized hex color
  */
@@ -16,8 +17,21 @@ const normalizeHex = (hex: string): string => {
     hex = hex.split('').map(char => char + char).join('');
   }
 
+  if (hex.length === 8) {
+    hex = hex.slice(0, 6);
+  }
+
   return `#${hex.toUpperCase()}`;
 };
+
+/**
+ * Composes clamped RGB channels into an uppercase #RRGGBB string
+ */
+const toHexString = (r: number, g: number, b: number): string =>
+  `#${(0x1000000 + clamp(r) * 0x10000 + clamp(g) * 0x100 + clamp(b))
+    .toString(16)
+    .slice(1)
+    .toUpperCase()}`;
 
 /**
  * Clamps a number between 0 and 255
@@ -42,16 +56,11 @@ export const lightenColor = (hex: string, percent: number): string => {
   const num = parseInt(normalized.slice(1), 16);
   const amt = Math.round(2.55 * percent);
 
-  const R = clamp((num >> 16) + amt);
-  const G = clamp(((num >> 8) & 0x00ff) + amt);
-  const B = clamp((num & 0x0000ff) + amt);
-
-  return `#${(
-    0x1000000 +
-    R * 0x10000 +
-    G * 0x100 +
-    B
-  ).toString(16).slice(1).toUpperCase()}`;
+  return toHexString(
+    (num >> 16) + amt,
+    ((num >> 8) & 0x00ff) + amt,
+    (num & 0x0000ff) + amt
+  );
 };
 
 /**
@@ -70,16 +79,11 @@ export const darkenColor = (hex: string, percent: number): string => {
   const num = parseInt(normalized.slice(1), 16);
   const amt = Math.round(2.55 * percent);
 
-  const R = clamp((num >> 16) - amt);
-  const G = clamp(((num >> 8) & 0x00ff) - amt);
-  const B = clamp((num & 0x0000ff) - amt);
-
-  return `#${(
-    0x1000000 +
-    R * 0x10000 +
-    G * 0x100 +
-    B
-  ).toString(16).slice(1).toUpperCase()}`;
+  return toHexString(
+    (num >> 16) - amt,
+    ((num >> 8) & 0x00ff) - amt,
+    (num & 0x0000ff) - amt
+  );
 };
 
 /**
@@ -111,16 +115,7 @@ export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
  * @returns Hex color string
  */
 export const rgbToHex = (r: number, g: number, b: number): string => {
-  const R = clamp(Math.round(r));
-  const G = clamp(Math.round(g));
-  const B = clamp(Math.round(b));
-
-  return `#${(
-    0x1000000 +
-    R * 0x10000 +
-    G * 0x100 +
-    B
-  ).toString(16).slice(1).toUpperCase()}`;
+  return toHexString(Math.round(r), Math.round(g), Math.round(b));
 };
 
 /**
