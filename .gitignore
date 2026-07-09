@@ -1,5 +1,9 @@
 node_modules
 
 dist
+dist-cjs
 
 .idea
+
+*.tsbuildinfo
+.omc/
