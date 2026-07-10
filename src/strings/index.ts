@@ -477,3 +477,24 @@ export const humanize = (str: string): string => {
 };
 
 
+
+/**
+ * Parse JSON without throwing
+ * @param value - JSON string
+ * @param fallback - Returned when parsing fails (default null)
+ * @param options.reviver - Passed through to JSON.parse
+ * @example
+ * safeJsonParse('{"a":1}') // { a: 1 }
+ * safeJsonParse('{oops', []) // []
+ */
+export const safeJsonParse = <T = any>(
+    value: string,
+    fallback: T | null = null,
+    options: { reviver?: (key: string, value: any) => any } = {}
+): T | null => {
+    try {
+        return JSON.parse(value, options.reviver);
+    } catch {
+        return fallback;
+    }
+};

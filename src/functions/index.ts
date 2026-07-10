@@ -190,18 +190,21 @@ export const once = <T extends (...args: any[]) => any>(
 /**
  * Memoize a function by caching results per argument list
  * @param func - Function to memoize
- * @param resolver - Optional cache key resolver (defaults to JSON.stringify of args)
+ * @param options - Options object, or a cache key resolver function directly.
+ * `resolver` defaults to JSON.stringify of the arguments.
  * @returns Memoized function
  *
  * @example
  * const slowSquare = memoize((n: number) => n * n);
  * slowSquare(4); // computed
  * slowSquare(4); // cached
+ * memoize(fetchUser, { resolver: (user) => user.id });
  */
 export const memoize = <T extends (...args: any[]) => any>(
     func: T,
-    resolver?: (...args: Parameters<T>) => string
+    options: ((...args: Parameters<T>) => string) | { resolver?: (...args: Parameters<T>) => string } = {}
 ): ((...args: Parameters<T>) => ReturnType<T>) => {
+    const resolver = typeof options === 'function' ? options : options.resolver;
     const cache = new Map<string, ReturnType<T>>();
 
     return function (this: any, ...args: Parameters<T>): ReturnType<T> {

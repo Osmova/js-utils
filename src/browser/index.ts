@@ -212,3 +212,74 @@ export const dataUrlToBlob = (dataUrl: string): Blob | null => {
         return null;
     }
 };
+
+/**
+ * Copy text to the clipboard
+ * Uses the async Clipboard API in secure contexts, falling back to a
+ * hidden textarea + execCommand elsewhere
+ * @param options.fallback - Allow the hidden-textarea fallback in insecure contexts (default true)
+ * @returns True when the copy succeeded
+ *
+ * @example
+ * await copyToClipboard('hello');
+ */
+export const copyToClipboard = async (
+    text: string,
+    options: { fallback?: boolean } = {}
+): Promise<boolean> => {
+    const { fallback = true } = options;
+
+    if (!isBrowser()) {
+        console.warn('copyToClipboard: Not in browser environment');
+        return false;
+    }
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+
+        if (!fallback) return false;
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok;
+    } catch (error) {
+        console.error('copyToClipboard: Failed to copy', error);
+        return false;
+    }
+};
+
+/**
+ * Convert a Blob to a data URL (inverse of dataUrlToBlob)
+ * Uses FileReader when available, otherwise encodes manually,
+ * so it also works in Node >= 16
+ *
+ * @example
+ * const dataUrl = await blobToDataUrl(new Blob(['hi'], { type: 'text/plain' }));
+ * // 'data:text/plain;base64,aGk='
+ */
+export const blobToDataUrl = async (blob: Blob): Promise<string> => {
+    if (typeof FileReader !== 'undefined') {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+    return `data:${blob.type || 'application/octet-stream'};base64,${btoa(binary)}`;
+};

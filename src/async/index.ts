@@ -90,3 +90,54 @@ export function withTimeout<T>(
 
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
+/**
+ * A promise with its resolve/reject exposed, for bridging
+ * callback-style flows (modals, queues, one-shot events)
+ */
+export interface Deferred<T> {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+}
+
+/**
+ * Create an externally controllable promise
+ * @example
+ * const modal = deferred<boolean>();
+ * confirmButton.onclick = () => modal.resolve(true);
+ * const confirmed = await modal.promise;
+ */
+export function deferred<T = void>(): Deferred<T> {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+    return { promise, resolve, reject };
+}
+
+/**
+ * Poll until a (sync or async) predicate returns truthy
+ * Rejects with an Error once the timeout elapses
+ * @example
+ * await waitFor(() => !!document.querySelector('#ready'), { interval: 100, timeout: 3000 });
+ */
+export async function waitFor(
+    predicate: () => boolean | Promise<boolean>,
+    options: { interval?: number; timeout?: number; timeoutMessage?: string } = {}
+): Promise<void> {
+    const {
+        interval = 50,
+        timeout = 5000,
+        timeoutMessage = 'waitFor: condition not met before timeout'
+    } = options;
+    const start = Date.now();
+
+    while (!(await predicate())) {
+        if (Date.now() - start >= timeout) {
+            throw new Error(timeoutMessage);
+        }
+        await sleep(interval);
+    }
+}

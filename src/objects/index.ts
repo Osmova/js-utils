@@ -870,3 +870,62 @@ export const isArrayLike = (value: any): boolean => {
     const keys = Object.keys(value);
     return keys.length > 0 && keys.every(key => /^\d+$/.test(key));
 };
+/**
+ * Sets a nested value by dot-notation path, creating intermediate
+ * objects (or arrays for numeric segments) as needed
+ * Note: mutates the target object and returns it (complement of getByPath)
+ *
+ * @example
+ * setByPath({}, 'a.b.c', 1) // { a: { b: { c: 1 } } }
+ * setByPath({}, 'list.0', 'x') // { list: ['x'] }
+ */
+export const setByPath = <T extends Record<string, any>>(
+    obj: T,
+    path: string | (string | number)[],
+    value: any,
+    options: { separator?: string } = {}
+): T => {
+    const { separator = '.' } = options;
+    const keys = Array.isArray(path) ? path : path.split(separator);
+    let current: any = obj;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (current[key] == null || typeof current[key] !== 'object') {
+            current[key] = /^\d+$/.test(String(keys[i + 1])) ? [] : {};
+        }
+        current = current[key];
+    }
+
+    current[keys[keys.length - 1]] = value;
+    return obj;
+};
+
+/**
+ * Map every value of an object, keeping its keys
+ * @example
+ * mapValues({ a: 1, b: 2 }, v => v * 10) // { a: 10, b: 20 }
+ */
+export const mapValues = <T, U>(
+    obj: Record<string, T>,
+    fn: (value: T, key: string) => U
+): Record<string, U> => {
+    const result: Record<string, U> = {};
+    for (const key of Object.keys(obj)) {
+        result[key] = fn(obj[key], key);
+    }
+    return result;
+};
+
+/**
+ * Swap keys and values (values are stringified; later duplicates win)
+ * @example
+ * invert({ a: 1, b: 2 }) // { '1': 'a', '2': 'b' }
+ */
+export const invert = (obj: Record<string, string | number>): Record<string, string> => {
+    const result: Record<string, string> = {};
+    for (const key of Object.keys(obj)) {
+        result[String(obj[key])] = key;
+    }
+    return result;
+};

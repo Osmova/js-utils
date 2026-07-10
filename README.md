@@ -37,6 +37,8 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `formatPercent(value, options?)` | Formats number as percentage | `formatPercent(0.1556)` → `"15,56 %"` |
 | `clamp(value, min, max)` | Clamps number between min and max values | `clamp(150, 0, 100)` → `100` |
 | `randomInt(min, max)` | Generates random integer between min and max (inclusive) | `randomInt(1, 10)` → `7` |
+| `roundTo(value, decimals?)` | Rounds to fixed decimals, returns a number | `roundTo(1.005, 2)` → `1.01` |
+| `formatBytes(bytes, options?)` | Human-readable byte size (decimal or binary units) | `formatBytes(1536)` → `"1.5 KB"` |
 
 ### Arrays
 
@@ -50,6 +52,10 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `range(start, end?, step?)` | Creates array of numbers from start to end | `range(5)` → `[0,1,2,3,4]` |
 | `intersection(array, other)` | Values present in both arrays | `intersection([1,2,3], [2,3,4])` → `[2,3]` |
 | `difference(array, other)` | Values of first array missing from second | `difference([1,2,3], [2,3,4])` → `[1]` |
+| `partition(array, predicate)` | Splits into [matching, rest] in one pass | `partition([1,2,3,4], n => n%2===0)` → `[[2,4],[1,3]]` |
+| `zip(a, b)` | Pairs two arrays index by index | `zip(['a','b'], [1,2])` → `[['a',1],['b',2]]` |
+| `toggleItem(array, item, options?)` | Adds item if absent, removes if present (immutable) | `toggleItem([1,2], 2)` → `[1]` |
+| `moveItem(array, from, to)` | Moves an item to another position (immutable) | `moveItem(['a','b','c'], 0, 2)` → `['b','c','a']` |
 
 ### Strings
 
@@ -75,6 +81,7 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `escapeHtml(str)` | Escapes HTML special characters | `escapeHtml('<b>')` → `"&lt;b&gt;"` |
 | `parseStringValue(value, options?)` | Parses a string to bool/number/JSON when possible | `parseStringValue('42')` → `42` |
 | `composePath(...parts)` | Joins path segments | `composePath('api', 'users', '1')` → `"api/users/1"` |
+| `safeJsonParse(value, fallback?, options?)` | JSON.parse without throwing | `safeJsonParse('{oops', {})` → `{}` |
 | `rgb2hex(rgb)` | ⚠️ Deprecated — use colors `parseRgb` + `rgbToHex` | `rgb2hex('rgb(255, 0, 0)')` → `"#ff0000"` |
 | `composeURL(...parts)` | ⚠️ Deprecated — use `composePath` | `composeURL('api', 'users', '1')` → `"api/users/1"` |
 | `generatePassword(opts?)` | Generates secure password (crypto, unbiased) | `generatePassword({length: 16})` → `"aB3$kL9..."` |
@@ -110,6 +117,9 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `omit(obj, keys)` | Creates new object excluding specified keys | `omit({a:1,b:2,c:3}, ['b'])` → `{a:1,c:3}` |
 | `toArray(input, options?)` | Converts various inputs to arrays (objects with numeric keys, strings, Set, Map) | `toArray({"0":"a","1":"b"})` → `["a","b"]` |
 | `isArrayLike(value)` | Checks if value is array-like (array or object with numeric keys) | `isArrayLike({"0":"a"})` → `true` |
+| `setByPath(obj, path, value, options?)` | Sets nested value by dot path, creating containers | `setByPath({}, 'a.b', 1)` → `{a:{b:1}}` |
+| `mapValues(obj, fn)` | Maps object values, keeping keys | `mapValues({a:1}, v => v*10)` → `{a:10}` |
+| `invert(obj)` | Swaps keys and values | `invert({a:1})` → `{'1':'a'}` |
 
 ### Dates
 
@@ -121,6 +131,8 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `isSameDay(a, b)` | Checks if two dates share a calendar day | `isSameDay(d1, d2)` → `true` |
 | `startOfDay(date, options?)` | New date at 00:00:00.000 (local or UTC) | `startOfDay(new Date())` → `Date` |
 | `endOfDay(date, options?)` | New date at 23:59:59.999 (local or UTC) | `endOfDay(new Date())` → `Date` |
+| `diffDays(a, b, options?)` | Signed calendar-day difference (b - a) | `diffDays(jan1, jan8)` → `7` |
+| `timeAgo(date, options?)` | Relative time via Intl.RelativeTimeFormat | `timeAgo(Date.now() - 180000, {locale:'en-US'})` → `"3 minutes ago"` |
 
 ### Async
 
@@ -130,6 +142,8 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `retry(fn, maxAttempts?, baseDelay?)` | Retries function with exponential backoff | `await retry(() => fetch('/api'), 3, 1000)` |
 | `promiseAllLimit(tasks, limit)` | Execute tasks with a concurrency limit (pass factories so tasks start lazily) | `await promiseAllLimit([() => fetch(a), () => fetch(b)], 2)` |
 | `withTimeout(promise, timeoutMs, timeoutMessage?)` | Adds timeout to promise | `await withTimeout(fetch('/api'), 5000)` |
+| `deferred()` | Promise with exposed resolve/reject | `const d = deferred(); d.resolve(42)` |
+| `waitFor(predicate, options?)` | Polls until a (sync/async) condition is true | `await waitFor(() => ready, {timeout: 3000})` |
 
 ### Browser
 
@@ -140,6 +154,8 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `openBlob(blob, options?)` | Opens Blob in new browser tab | `openBlob(pdfBlob)` |
 | `handleBlobDownload(blob, filename, options?)` | Download or open Blob based on options | `handleBlobDownload(blob, 'file.pdf', {download: true})` |
 | `dataUrlToBlob(dataUrl)` | Converts data URL to Blob | `dataUrlToBlob('data:text/plain;base64,...')` |
+| `copyToClipboard(text, options?)` | Copies text (Clipboard API + textarea fallback) | `await copyToClipboard('hello')` → `true` |
+| `blobToDataUrl(blob)` | Converts Blob to data URL (inverse of dataUrlToBlob) | `await blobToDataUrl(blob)` → `"data:...;base64,..."` |
 
 ### Functions
 
@@ -150,7 +166,7 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `loadExternalScript(src, opts?)` | Dynamically loads external scripts (browser only) | `await loadExternalScript('https://cdn.example.com/lib.js')` |
 | `genUuid(options?)` | Generates UUID with version support (v1 or v4) | `genUuid({version: 4})` → `"550e8400-e29b-41d4-a716-446655440000"` |
 | `once(func)` | Wraps a function so it only ever runs once | `const init = once(setup)` |
-| `memoize(func, resolver?)` | Caches results per argument list | `const fast = memoize(slowFn)` |
+| `memoize(func, options?)` | Caches results per argument list (options object or resolver fn) | `const fast = memoize(slowFn)` |
 
 ### Colors
 

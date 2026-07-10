@@ -107,3 +107,46 @@ export const clamp = (value: number, min: number, max: number): number => {
 export const randomInt = (min: number, max: number): number => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
+
+/**
+ * Round a number to a fixed number of decimals (returns a number)
+ * @example
+ * roundTo(1.005, 2) // 1.01
+ * roundTo(1234.5678, 1) // 1234.6
+ */
+export const roundTo = (value: number, decimals: number = 0): number => {
+    const factor = 10 ** decimals;
+    return Math.round((value + Number.EPSILON) * factor) / factor;
+};
+
+/**
+ * Format a byte count as a human-readable size
+ * @param bytes - Number of bytes
+ * @param options.decimals - Max decimals (default 1)
+ * @param options.binary - Use 1024-based units (KiB, MiB) instead of 1000-based (KB, MB)
+ * @example
+ * formatBytes(1536) // '1.5 KB'
+ * formatBytes(1536, { binary: true }) // '1.5 KiB'
+ * formatBytes(0) // '0 B'
+ */
+export const formatBytes = (
+    bytes: number,
+    options: { decimals?: number; binary?: boolean } = {}
+): string => {
+    const { decimals = 1, binary = false } = options;
+
+    if (!Number.isFinite(bytes)) return '0 B';
+
+    const base = binary ? 1024 : 1000;
+    const units = binary
+        ? ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+        : ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+    const abs = Math.abs(bytes);
+    if (abs < 1) return `${bytes} B`;
+
+    const exp = Math.min(Math.floor(Math.log(abs) / Math.log(base)), units.length - 1);
+    const value = bytes / base ** exp;
+
+    return `${roundTo(value, exp === 0 ? 0 : decimals)} ${units[exp]}`;
+};

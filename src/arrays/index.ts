@@ -135,3 +135,67 @@ export const difference = <T>(array: T[], other: T[]): T[] => {
     const set = new Set(other);
     return array.filter(item => !set.has(item));
 };
+
+/**
+ * Split array into two groups in a single pass
+ * @returns Tuple of [items matching predicate, items not matching]
+ * @example
+ * partition([1, 2, 3, 4], n => n % 2 === 0) // [[2, 4], [1, 3]]
+ */
+export const partition = <T>(
+    array: T[],
+    predicate: (item: T, index: number) => boolean
+): [T[], T[]] => {
+    const pass: T[] = [];
+    const fail: T[] = [];
+    array.forEach((item, index) => (predicate(item, index) ? pass : fail).push(item));
+    return [pass, fail];
+};
+
+/**
+ * Pair up two arrays index by index (stops at the shorter one)
+ * @example
+ * zip(['a', 'b'], [1, 2, 3]) // [['a', 1], ['b', 2]]
+ */
+export const zip = <A, B>(a: A[], b: B[]): [A, B][] => {
+    const length = Math.min(a.length, b.length);
+    const result: [A, B][] = new Array(length);
+    for (let i = 0; i < length; i++) {
+        result[i] = [a[i], b[i]];
+    }
+    return result;
+};
+
+/**
+ * Add the item if absent, remove it if present (immutable)
+ * Handy for toggling selections in UI state
+ * @param options.comparator - Custom equality (defaults to strict ===), e.g. compare objects by id
+ * @example
+ * toggleItem([1, 2], 3) // [1, 2, 3]
+ * toggleItem([1, 2, 3], 3) // [1, 2]
+ * toggleItem(users, user, { comparator: (a, b) => a.id === b.id })
+ */
+export const toggleItem = <T>(
+    array: T[],
+    item: T,
+    options: { comparator?: (a: T, b: T) => boolean } = {}
+): T[] => {
+    const { comparator = (a: T, b: T): boolean => a === b } = options;
+    return array.some(existing => comparator(existing, item))
+        ? array.filter(existing => !comparator(existing, item))
+        : [...array, item];
+};
+
+/**
+ * Move an item to another position (immutable)
+ * Out-of-range `from` returns a copy unchanged; `to` is clamped
+ * @example
+ * moveItem(['a', 'b', 'c'], 0, 2) // ['b', 'c', 'a']
+ */
+export const moveItem = <T>(array: T[], from: number, to: number): T[] => {
+    const result = [...array];
+    if (from < 0 || from >= result.length) return result;
+    const [item] = result.splice(from, 1);
+    result.splice(Math.max(0, Math.min(result.length, to)), 0, item);
+    return result;
+};
