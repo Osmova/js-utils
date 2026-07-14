@@ -170,6 +170,15 @@
                 const result = utils.deepMerge({a: {x: 1}}, {a: {y: 2}});
                 if (result.a.x !== 1 || result.a.y !== 2) throw new Error('Deep merge failed');
             });
+
+            await test('Object', 'toFormData preserves prototype-named form fields', () => {
+                const form = document.createElement('form');
+                form.innerHTML = '<input name="hasOwnProperty" value="x"><input name="__proto__" value="y">';
+                const formData = utils.toFormData(form);
+                if (formData.get('hasOwnProperty') !== 'x' || formData.get('__proto__') !== 'y') {
+                    throw new Error('Prototype-named form fields were not preserved');
+                }
+            });
             
             // Date utilities
             await test('Date', 'parseDate', () => {

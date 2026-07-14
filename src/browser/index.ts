@@ -247,10 +247,12 @@ export const copyToClipboard = async (
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
-        textarea.select();
-        const ok = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return ok;
+        try {
+            textarea.select();
+            return document.execCommand('copy');
+        } finally {
+            document.body.removeChild(textarea);
+        }
     } catch (error) {
         console.error('copyToClipboard: Failed to copy', error);
         return false;

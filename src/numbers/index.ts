@@ -110,13 +110,20 @@ export const randomInt = (min: number, max: number): number => {
 
 /**
  * Round a number to a fixed number of decimals (returns a number)
+ * Halves round away from zero for negative values too; non-finite
+ * `decimals` is treated as 0
  * @example
  * roundTo(1.005, 2) // 1.01
+ * roundTo(-1.005, 2) // -1.01
  * roundTo(1234.5678, 1) // 1234.6
  */
 export const roundTo = (value: number, decimals: number = 0): number => {
-    const factor = 10 ** decimals;
-    return Math.round((value + Number.EPSILON) * factor) / factor;
+    const places = Number.isFinite(decimals) ? Math.trunc(decimals) : 0;
+    const factor = 10 ** places;
+    // Round on the absolute value so negative halves mirror positive ones
+    // (Math.round(-100.5) would round toward +Infinity)
+    const rounded = Math.round((Math.abs(value) + Number.EPSILON) * factor) / factor;
+    return value < 0 ? -rounded : rounded;
 };
 
 /**
@@ -133,9 +140,12 @@ export const formatBytes = (
     bytes: number,
     options: { decimals?: number; binary?: boolean } = {}
 ): string => {
-    const { decimals = 1, binary = false } = options;
+    const { binary = false } = options;
+    const decimals = Number.isFinite(options.decimals as number)
+        ? Math.max(0, Math.trunc(options.decimals as number))
+        : 1;
 
-    if (!Number.isFinite(bytes)) return '0 B';
+    if (!Number.isFinite(bytes)) return `${bytes} B`;
 
     const base = binary ? 1024 : 1000;
     const units = binary

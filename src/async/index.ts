@@ -82,10 +82,25 @@ export function withTimeout<T>(
     timeoutMs: number,
     timeoutMessage = 'Operation timed out'
 ): Promise<T> {
+    if (timeoutMs === Infinity) return promise;
+
+    const maxTimerDelay = 2_147_483_647;
     let timer: ReturnType<typeof setTimeout>;
+    let remaining = Number.isFinite(timeoutMs) ? timeoutMs : 0;
 
     const timeout = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+        const schedule = () => {
+            const delay = Math.min(remaining, maxTimerDelay);
+            timer = setTimeout(() => {
+                remaining -= delay;
+                if (remaining <= 0) {
+                    reject(new Error(timeoutMessage));
+                } else {
+                    schedule();
+                }
+            }, delay);
+        };
+        schedule();
     });
 
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
@@ -132,12 +147,29 @@ export async function waitFor(
         timeout = 5000,
         timeoutMessage = 'waitFor: condition not met before timeout'
     } = options;
-    const start = Date.now();
+    // A zero/negative timeout is a single check, preserving the original
+    // behavior for asynchronous predicates without adding a polling delay.
+    if (timeout <= 0) {
+        if (await predicate()) return;
+        throw new Error(timeoutMessage);
+    }
 
-    while (!(await predicate())) {
-        if (Date.now() - start >= timeout) {
+    const deadline = Date.now() + timeout;
+
+    for (;;) {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) {
+            if (await predicate()) return;
             throw new Error(timeoutMessage);
         }
-        await sleep(interval);
+
+        // Race the predicate against the deadline so a hanging async
+        // predicate cannot suspend the timeout forever.
+        if (await withTimeout(Promise.resolve(predicate()), remaining, timeoutMessage)) {
+            return;
+        }
+
+        const delay = Math.min(Math.max(interval, 0), deadline - Date.now());
+        await sleep(delay);
     }
 }

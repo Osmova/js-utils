@@ -147,22 +147,31 @@ export const endOfDay = (date: Date, options: { utc?: boolean } = {}): Date => {
 
 /**
  * Difference in calendar days between two dates (b - a)
- * Uses UTC midnights of the local calendar dates, so DST shifts
- * never produce off-by-one results
+ * Compares calendar dates in the host's LOCAL timezone by default
+ * (UTC with the utc option), normalized to UTC midnights so DST
+ * shifts never produce off-by-one results
+ * @param options.absolute - Return the absolute value
+ * @param options.utc - Compare UTC calendar dates instead of local ones
  * @example
  * diffDays(new Date('2026-01-01'), new Date('2026-01-08')) // 7
  * diffDays(new Date('2026-01-08'), new Date('2026-01-01')) // -7
  */
-export const diffDays = (a: Date, b: Date, options: { absolute?: boolean } = {}): number => {
+export const diffDays = (
+    a: Date,
+    b: Date,
+    options: { absolute?: boolean; utc?: boolean } = {}
+): number => {
     const MS_PER_DAY = 86_400_000;
-    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-    const diff = Math.round((utcB - utcA) / MS_PER_DAY);
+    const toUtcMidnight = (d: Date): number => options.utc
+        ? Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+        : Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+    const diff = Math.round((toUtcMidnight(b) - toUtcMidnight(a)) / MS_PER_DAY);
     return options.absolute ? Math.abs(diff) : diff;
 };
 
 /**
  * Human-readable relative time via Intl.RelativeTimeFormat
+ * Returns '' for unparseable dates
  * @param date - Target date (Date, ISO string, or timestamp)
  * @param options.locale - BCP 47 locale (default 'fr-FR', like the other formatters)
  * @param options.now - Reference date (default: current time)
@@ -175,7 +184,11 @@ export const timeAgo = (
     options: { locale?: string; now?: Date } = {}
 ): string => {
     const { locale = 'fr-FR', now = new Date() } = options;
-    const target = parseDate(date);
+    // Invalid-date sentinel instead of parseDate's default "now" fallback,
+    // which would silently report a bogus "just now"
+    const target = parseDate(date, new Date(NaN));
+
+    if (isNaN(target.getTime()) || isNaN(now.getTime())) return '';
 
     let delta = (target.getTime() - now.getTime()) / 1000;
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });

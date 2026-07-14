@@ -1,6 +1,6 @@
 {
   "name": "@osmova/js-utils",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "JavaScript/TypeScript utility functions",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -74,7 +74,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Osmova/js-utils.git"
+    "url": "git+https://github.com/Osmova/js-utils.git"
   },
   "author": "Bastien Viglianti <bastien.viglianti@gmail.com>",
   "license": "MIT",
@@ -86,7 +86,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:node": "node tests/node-test.cjs",
-    "test:browser": "node tests/browser-test-runner.js",
+    "test:browser": "node tests/browser-test-runner.cjs",
     "test:all": "pnpm test:node && pnpm test:browser",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"

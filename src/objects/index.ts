@@ -7,6 +7,16 @@ export const isObject = (item: any): item is Record<string, any> => {
 
 export const isNumeric = (any: any): boolean => !isNaN(parseFloat(any)) && isFinite(any);
 
+/** Define an own enumerable property without invoking Object.prototype setters. */
+const setOwnValue = (target: object, key: PropertyKey, value: unknown): void => {
+    Object.defineProperty(target, key, {
+        value,
+        enumerable: true,
+        writable: true,
+        configurable: true
+    });
+};
+
 /**
  * Checks if value is empty
  */
@@ -46,12 +56,12 @@ export const softMerge = (
 
     for (const key of Object.keys(base)) {
         const baseValue = base[key];
-        const hasValueKey = key in values;
+        const hasValueKey = Object.prototype.hasOwnProperty.call(values, key);
 
         if (deep && hasValueKey && isObject(baseValue) && isObject(values[key])) {
-            result[key] = softMerge(baseValue, values[key], options);
+            setOwnValue(result, key, softMerge(baseValue, values[key], options));
         } else {
-            result[key] = hasValueKey ? values[key] : baseValue;
+            setOwnValue(result, key, hasValueKey ? values[key] : baseValue);
         }
     }
 
@@ -77,11 +87,11 @@ export const deepMerge = (...objects: Record<string, any>[]): Record<string, any
             const currentValue = obj[key];
 
             if (Array.isArray(prevValue) && Array.isArray(currentValue)) {
-                result[key] = prevValue.concat(currentValue);
+                setOwnValue(result, key, prevValue.concat(currentValue));
             } else if (isObject(prevValue) && isObject(currentValue)) {
-                result[key] = deepMerge(prevValue, currentValue);
+                setOwnValue(result, key, deepMerge(prevValue, currentValue));
             } else {
-                result[key] = currentValue;
+                setOwnValue(result, key, currentValue);
             }
         }
     }
@@ -98,7 +108,7 @@ export const objectFilter = <T>(
 ): Record<string, T> => {
     return Object.keys(obj).reduce((acc, key) => {
         if (predicate(obj[key], key)) {
-            acc[key] = obj[key];
+            setOwnValue(acc, key, obj[key]);
         }
         return acc;
     }, {} as Record<string, T>);
@@ -110,7 +120,10 @@ export const objectFilter = <T>(
 export const groupBy = <T>(array: T[], keys: (keyof T)[]): Record<string, T[]> =>
     array.reduce((objectsByKeyValue, obj) => {
         const value = keys.map((key) => obj[key]).join('-');
-        objectsByKeyValue[value] = (objectsByKeyValue[value] || []).concat(obj);
+        const group = Object.prototype.hasOwnProperty.call(objectsByKeyValue, value)
+            ? objectsByKeyValue[value]
+            : [];
+        setOwnValue(objectsByKeyValue, value, group.concat(obj));
         return objectsByKeyValue;
     }, {} as Record<string, T[]>);
 
@@ -206,7 +219,7 @@ export const removeUnsetValues = (
             return result;
         }
 
-        result[key] = removeUnsetValues(value, options);
+        setOwnValue(result, key, removeUnsetValues(value, options));
         return result;
     }, {});
 };
@@ -231,7 +244,7 @@ export const objectToFormData = (
     } = params;
 
     for (const property in obj) {
-        if (obj.hasOwnProperty(property) && !ignoreFields.includes(property)) {
+        if (Object.prototype.hasOwnProperty.call(obj, property) && !ignoreFields.includes(property)) {
             const field = namespace ? `${namespace}[${property}]` : property;
             const data = obj[property];
 
@@ -263,20 +276,20 @@ export const diff = (
 
     for (const key in obj2) {
         if (!deep) {
-            if (!obj1.hasOwnProperty(key)) {
-                result[key] = obj2[key];
+            if (!Object.prototype.hasOwnProperty.call(obj1, key)) {
+                setOwnValue(result, key, obj2[key]);
             }
         } else {
-            if (!obj1.hasOwnProperty(key)) {
-                result[key] = obj2[key];
+            if (!Object.prototype.hasOwnProperty.call(obj1, key)) {
+                setOwnValue(result, key, obj2[key]);
             } else if (typeof obj2[key] === 'object' && obj2[key] !== null) {
                 if (typeof obj1[key] !== 'object' || obj1[key] === null) {
-                    result[key] = obj2[key];
+                    setOwnValue(result, key, obj2[key]);
                     continue;
                 }
                 const nestedDiff = diff(obj1[key], obj2[key], { deep: true });
                 if (Object.keys(nestedDiff).length > 0) {
-                    result[key] = nestedDiff;
+                    setOwnValue(result, key, nestedDiff);
                 }
             }
         }
@@ -452,7 +465,7 @@ export const flattenObject = (
     if (prefix && typeof ob === 'object' && ob !== null) {
         const keys = Object.keys(ob);
         if (keys.length === 0) {
-            result[prefix] = Array.isArray(ob) ? [] : {};
+            setOwnValue(result, prefix, Array.isArray(ob) ? [] : {});
             return result;
         }
     }
@@ -465,7 +478,7 @@ export const flattenObject = (
             flattenObject(value, newKey, result, options);
         } else {
             if (!ignorePropsSet.has(key)) {
-                result[newKey] = value;
+                setOwnValue(result, newKey, value);
             }
         }
     }
@@ -562,20 +575,20 @@ export const toFormData = (
         } catch (error) {
             throw new Error('Invalid JSON string provided to toFormData');
         }
-    } else if (input instanceof HTMLFormElement) {
+    } else if (typeof HTMLFormElement !== 'undefined' && input instanceof HTMLFormElement) {
         const formDataObj = new FormData(input);
         processedInput = {};
 
         // @ts-ignore
         for (const [key, value] of formDataObj.entries()) {
-            if (processedInput[key]) {
+            if (Object.prototype.hasOwnProperty.call(processedInput, key)) {
                 if (Array.isArray(processedInput[key])) {
                     processedInput[key].push(value);
                 } else {
-                    processedInput[key] = [processedInput[key], value];
+                    setOwnValue(processedInput, key, [processedInput[key], value]);
                 }
             } else {
-                processedInput[key] = value;
+                setOwnValue(processedInput, key, value);
             }
         }
     } else if (typeof input === 'object' && input !== null) {
@@ -593,7 +606,7 @@ export const toFormData = (
 
     const processObject = (obj: Record<string, any>, currentNamespace: string = namespace) => {
         for (const property in obj) {
-            if (!obj.hasOwnProperty(property) || ignoreFields.includes(property)) {
+            if (!Object.prototype.hasOwnProperty.call(obj, property) || ignoreFields.includes(property)) {
                 continue;
             }
 
@@ -653,7 +666,7 @@ export const pick = <T extends Record<string, any>, K extends keyof T>(
     const result = {} as Pick<T, K>;
     for (const key of keys) {
         if (key in obj) {
-            result[key] = obj[key];
+            setOwnValue(result, key, obj[key]);
         }
     }
     return result;
@@ -887,6 +900,13 @@ export const setByPath = <T extends Record<string, any>>(
 ): T => {
     const { separator = '.' } = options;
     const keys = Array.isArray(path) ? path : path.split(separator);
+
+    // Prototype-pollution guard: writing through these segments would
+    // mutate Object.prototype instead of the target object
+    if (keys.some(key => key === '__proto__' || key === 'constructor' || key === 'prototype')) {
+        return obj;
+    }
+
     let current: any = obj;
 
     for (let i = 0; i < keys.length - 1; i++) {
@@ -912,7 +932,7 @@ export const mapValues = <T, U>(
 ): Record<string, U> => {
     const result: Record<string, U> = {};
     for (const key of Object.keys(obj)) {
-        result[key] = fn(obj[key], key);
+        setOwnValue(result, key, fn(obj[key], key));
     }
     return result;
 };
@@ -925,7 +945,7 @@ export const mapValues = <T, U>(
 export const invert = (obj: Record<string, string | number>): Record<string, string> => {
     const result: Record<string, string> = {};
     for (const key of Object.keys(obj)) {
-        result[String(obj[key])] = key;
+        setOwnValue(result, String(obj[key]), key);
     }
     return result;
 };

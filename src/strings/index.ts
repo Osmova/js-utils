@@ -480,6 +480,11 @@ export const humanize = (str: string): string => {
 
 /**
  * Parse JSON without throwing
+ * Note: the T type parameter is an assertion, not a validation — the
+ * parsed value is returned as T unchecked. A JSON document containing
+ * literal `null` is indistinguishable from the default fallback; pass a
+ * custom fallback if you need to tell them apart. Reviver exceptions are
+ * treated as parse failures.
  * @param value - JSON string
  * @param fallback - Returned when parsing fails (default null)
  * @param options.reviver - Passed through to JSON.parse

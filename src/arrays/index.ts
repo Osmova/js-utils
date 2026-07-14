@@ -188,13 +188,16 @@ export const toggleItem = <T>(
 
 /**
  * Move an item to another position (immutable)
- * Out-of-range `from` returns a copy unchanged; `to` is clamped
+ * Non-integer or out-of-range indexes return a copy unchanged;
+ * an integer `to` is clamped into range
  * @example
  * moveItem(['a', 'b', 'c'], 0, 2) // ['b', 'c', 'a']
  */
 export const moveItem = <T>(array: T[], from: number, to: number): T[] => {
     const result = [...array];
-    if (from < 0 || from >= result.length) return result;
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || from >= result.length) {
+        return result;
+    }
     const [item] = result.splice(from, 1);
     result.splice(Math.max(0, Math.min(result.length, to)), 0, item);
     return result;

@@ -191,14 +191,16 @@ export const once = <T extends (...args: any[]) => any>(
  * Memoize a function by caching results per argument list
  * @param func - Function to memoize
  * @param options - Options object, or a cache key resolver function directly.
- * `resolver` defaults to JSON.stringify of the arguments.
+ * `resolver` defaults to JSON.stringify of the arguments — beware that
+ * non-JSON-safe args (undefined, NaN, functions, cycles, BigInt) can
+ * collide or throw; pass a resolver for those.
  * @returns Memoized function
  *
  * @example
  * const slowSquare = memoize((n: number) => n * n);
  * slowSquare(4); // computed
  * slowSquare(4); // cached
- * memoize(fetchUser, { resolver: (user) => user.id });
+ * memoize(fetchUser, { resolver: (user) => String(user.id) });
  */
 export const memoize = <T extends (...args: any[]) => any>(
     func: T,
