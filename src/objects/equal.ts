@@ -160,10 +160,14 @@ const _compareMaps = (
 ): boolean => {
     if (a.size !== b.size) return false;
 
+    const unmatchedEntries = [...b.entries()];
     for (const [key, value] of a) {
-        if (!b.has(key) || !_equal(value, b.get(key), cache, depth + 1, options)) {
-            return false;
-        }
+        const matchIndex = unmatchedEntries.findIndex(([otherKey, otherValue]) =>
+            _equal(key, otherKey, cache, depth + 1, options)
+            && _equal(value, otherValue, cache, depth + 1, options)
+        );
+        if (matchIndex === -1) return false;
+        unmatchedEntries.splice(matchIndex, 1);
     }
     return true;
 };

@@ -320,6 +320,10 @@ export const generatePassword = (options: {
     symbols?: boolean
 } = {}): string => {
     const { length = 12, symbols = true } = options;
+    const minimumLength = symbols ? 4 : 3;
+    if (!Number.isInteger(length) || length < minimumLength) {
+        throw new RangeError(`generatePassword: length must be an integer of at least ${minimumLength}`);
+    }
 
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

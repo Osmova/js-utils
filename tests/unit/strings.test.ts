@@ -78,6 +78,11 @@ describe('generatePassword', () => {
         const pw = generatePassword({ length: 12, symbols: false });
         expect(pw).toMatch(/^[a-zA-Z0-9]{12}$/);
     });
+
+    it('rejects lengths too short for the required character classes', () => {
+        expect(() => generatePassword({ length: 3 })).toThrow(RangeError);
+        expect(() => generatePassword({ length: 2, symbols: false })).toThrow(RangeError);
+    });
 });
 
 describe('misc string utils', () => {

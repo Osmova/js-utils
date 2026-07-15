@@ -125,6 +125,7 @@ describe('misc object utils', () => {
         expect(equal(a, b)).toBe(true);
         expect(equal({ a: [1, 2] }, { a: [1, 2] })).toBe(true);
         expect(equal(new Map([['k', 1]]), new Map([['k', 1]]))).toBe(true);
+        expect(equal(new Map([[{ id: 1 }, { value: 'a' }]]), new Map([[{ id: 1 }, { value: 'a' }]]))).toBe(true);
         expect(equal({ a: 1 }, { a: 2 })).toBe(false);
     });
 });

@@ -63,6 +63,7 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 |----------|-------------|---------|
 | `capitalize(str)` | Capitalizes first letter | `capitalize('hello')` → `"Hello"` |
 | `camelize(str, options?)` | Converts to camelCase | `camelize('hello-world')` → `"helloWorld"` |
+| `toCamelCase(str, options?)` | Alias for `camelize` | `toCamelCase('hello-world')` → `"helloWorld"` |
 | `camelToSnakeCase(str)` | Converts camelCase to snake_case | `camelToSnakeCase('helloWorld')` → `"hello_world"` |
 | `snakeToCamelCase(str)` | Converts snake_case to camelCase | `snakeToCamelCase('hello_world')` → `"helloWorld"` |
 | `humanize(str)` | Converts string to human-readable format | `humanize('firstName')` → `"First Name"` |
@@ -81,10 +82,10 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `escapeHtml(str)` | Escapes HTML special characters | `escapeHtml('<b>')` → `"&lt;b&gt;"` |
 | `parseStringValue(value, options?)` | Parses a string to bool/number/JSON when possible | `parseStringValue('42')` → `42` |
 | `composePath(...parts)` | Joins path segments | `composePath('api', 'users', '1')` → `"api/users/1"` |
-| `safeJsonParse(value, fallback?, options?)` | JSON.parse without throwing | `safeJsonParse('{oops', {})` → `{}` |
+| `safeJsonParse(value, fallback?, options?)` | JSON.parse without throwing; supports `options.reviver` | `safeJsonParse('{oops', {})` → `{}` |
 | `rgb2hex(rgb)` | ⚠️ Deprecated — use colors `parseRgb` + `rgbToHex` | `rgb2hex('rgb(255, 0, 0)')` → `"#ff0000"` |
 | `composeURL(...parts)` | ⚠️ Deprecated — use `composePath` | `composeURL('api', 'users', '1')` → `"api/users/1"` |
-| `generatePassword(opts?)` | Generates secure password (crypto, unbiased) | `generatePassword({length: 16})` → `"aB3$kL9..."` |
+| `generatePassword(opts?)` | Generates a secure, unbiased password; requires length ≥4 with symbols or ≥3 without | `generatePassword({length: 16})` → `"aB3$kL9..."` |
 
 ### Objects
 
@@ -95,6 +96,7 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `isNumeric(value)` | Checks if value is numeric | `isNumeric('123')` → `true` |
 | `softMerge(base, values, options?)` | Shallow merge objects | `softMerge({a: 1}, {b: 2})` → `{a: 1, b: 2}` |
 | `deepMerge(...objects)` | Deep merge multiple objects | `deepMerge({a: {x: 1}}, {a: {y: 2}})` → `{a: {x: 1, y: 2}}` |
+| `equal(a, b, options?)` | Deep equality comparison, including structural Map keys and Set values | `equal({a: [1]}, {a: [1]})` → `true` |
 | `objectFilter(obj, predicate)` | Filters object properties | `objectFilter({a: 1, b: 2}, v => v > 1)` → `{b: 2}` |
 | `groupBy(array, keys)` | Groups array by property/properties | `groupBy([{type: 'A'}, {type: 'B'}], 'type')` |
 | `valueByIndex(object, index)` | Gets value by numeric index | `valueByIndex({a: 1, b: 2}, 0)` → `1` |
@@ -131,8 +133,8 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `isSameDay(a, b)` | Checks if two dates share a calendar day | `isSameDay(d1, d2)` → `true` |
 | `startOfDay(date, options?)` | New date at 00:00:00.000 (local or UTC) | `startOfDay(new Date())` → `Date` |
 | `endOfDay(date, options?)` | New date at 23:59:59.999 (local or UTC) | `endOfDay(new Date())` → `Date` |
-| `diffDays(a, b, options?)` | Signed calendar-day difference (b - a) | `diffDays(jan1, jan8)` → `7` |
-| `timeAgo(date, options?)` | Relative time via Intl.RelativeTimeFormat | `timeAgo(Date.now() - 180000, {locale:'en-US'})` → `"3 minutes ago"` |
+| `diffDays(a, b, options?)` | Signed calendar-day difference; supports `absolute` and UTC calendar-date comparison | `diffDays(jan1, jan8, {utc: true})` → `7` |
+| `timeAgo(date, options?)` | Relative time via Intl.RelativeTimeFormat; returns `''` for invalid dates | `timeAgo(Date.now() - 180000, {locale:'en-US'})` → `"3 minutes ago"` |
 
 ### Async
 
@@ -143,7 +145,7 @@ import { promiseAllLimit } from '@osmova/js-utils/async';
 | `promiseAllLimit(tasks, limit)` | Execute tasks with a concurrency limit (pass factories so tasks start lazily) | `await promiseAllLimit([() => fetch(a), () => fetch(b)], 2)` |
 | `withTimeout(promise, timeoutMs, timeoutMessage?)` | Adds timeout to promise | `await withTimeout(fetch('/api'), 5000)` |
 | `deferred()` | Promise with exposed resolve/reject | `const d = deferred(); d.resolve(42)` |
-| `waitFor(predicate, options?)` | Polls until a (sync/async) condition is true | `await waitFor(() => ready, {timeout: 3000})` |
+| `waitFor(predicate, options?)` | Polls until a sync/async condition is true; `timeout: 0` performs one check | `await waitFor(() => ready, {timeout: 3000})` |
 
 ### Browser
 
