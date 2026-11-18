@@ -30,9 +30,11 @@ export const downloadBlob = (
     filename: string,
     options: {
         removeLink?: boolean;
+        revokeTimeout?: number;
     } = {}
 ): Blob | null => {
-    const { removeLink = true } = options;
+    // Revoking right after click() breaks Safari and Chrome's "ask where to save" dialog ("network error").
+    const { removeLink = true, revokeTimeout = 60000 } = options;
 
     if (!isBrowser()) {
         console.warn('downloadBlob: Not in browser environment');
@@ -51,7 +53,9 @@ export const downloadBlob = (
             document.body.removeChild(link);
         }
 
-        window.URL.revokeObjectURL(url);
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+        }, revokeTimeout);
         return blob;
     } catch (error) {
         console.error('downloadBlob: Failed to download blob', error);
